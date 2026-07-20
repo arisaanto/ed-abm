@@ -1,0 +1,5 @@
+Factor,Low,Default,High,Plain-language meaning
+Visibility response,0.07,0.14,0.21,Response probability after a staff member becomes visibly salient.
+Crowding threshold,Normal 0.50; High load 0.40,Normal 0.62; High load 0.50,Normal 0.74; High load 0.62,When ED pressure begins suppressing low-priority interactions.
+Repeat-contact delay,90 s,180 s,360 s,Minimum delay before another visibility-driven contact.
+Station-return tendency,0.20,0.42,0.70,Probability of a nurse station check after completing a task.

@@ -1,0 +1,839 @@
+{
+  "meta": {
+    "status": "preview",
+    "scientific_result": false,
+    "note": "Placeholder values and prose for interface development. Replace with aggregated Part 3 appraisal outputs."
+  },
+  "scenarios": [
+    {
+      "id": "normal_load",
+      "label": "Normal load"
+    },
+    {
+      "id": "high_load",
+      "label": "High load"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "baseline",
+      "label": "Baseline"
+    },
+    {
+      "id": "cockpit_only",
+      "label": "COCPIT only"
+    },
+    {
+      "id": "nursta_only",
+      "label": "NURSTA only"
+    },
+    {
+      "id": "both",
+      "label": "Both"
+    }
+  ],
+  "personas": [
+    {
+      "id": "team_connector",
+      "name": "Team Connector",
+      "tagline": "Actively maintains shared awareness and treats concise coordination as productive work.",
+      "accent": "#0b9f9a",
+      "accent_dark": "#08736f",
+      "accent_soft": "#d7f0ee",
+      "sprite": "assets/personas/team-connector.png",
+      "ocean": {
+        "openness": 72,
+        "conscientiousness": 48,
+        "extraversion": 92,
+        "agreeableness": 77,
+        "neuroticism": 46
+      }
+    },
+    {
+      "id": "focus_protector",
+      "name": "Focus Protector",
+      "tagline": "Protects task continuity and accepts interruptions when their operational value is clear.",
+      "accent": "#294a78",
+      "accent_dark": "#1d3659",
+      "accent_soft": "#dae5f2",
+      "sprite": "assets/personas/focus-protector.png",
+      "ocean": {
+        "openness": 45,
+        "conscientiousness": 83,
+        "extraversion": 38,
+        "agreeableness": 50,
+        "neuroticism": 80
+      }
+    },
+    {
+      "id": "patient_advocate",
+      "name": "Patient Advocate",
+      "tagline": "Prioritizes patient accessibility, explanation, dignity, and continuity across handoffs.",
+      "accent": "#df735f",
+      "accent_dark": "#a94f40",
+      "accent_soft": "#f7dfd8",
+      "sprite": "assets/personas/patient-advocate.png",
+      "ocean": {
+        "openness": 65,
+        "conscientiousness": 65,
+        "extraversion": 71,
+        "agreeableness": 84,
+        "neuroticism": 69
+      }
+    },
+    {
+      "id": "vigilant_monitor",
+      "name": "Vigilant Monitor",
+      "tagline": "Scans for weak signals, escalation risk, and gaps in situational awareness.",
+      "accent": "#8c3f4a",
+      "accent_dark": "#642d35",
+      "accent_soft": "#eedcdf",
+      "sprite": "assets/personas/vigilant-monitor.png",
+      "ocean": {
+        "openness": 58,
+        "conscientiousness": 85,
+        "extraversion": 64,
+        "agreeableness": 70,
+        "neuroticism": 85
+      }
+    },
+    {
+      "id": "adaptive_generalist",
+      "name": "Adaptive Generalist",
+      "tagline": "Balances competing demands and changes strategy with context rather than following one dominant priority.",
+      "accent": "#718052",
+      "accent_dark": "#4f5b39",
+      "accent_soft": "#e1e7d5",
+      "sprite": "assets/personas/adaptive-generalist.png",
+      "ocean": {
+        "openness": 95,
+        "conscientiousness": 66,
+        "extraversion": 66,
+        "agreeableness": 68,
+        "neuroticism": 63
+      }
+    }
+  ],
+  "results": [
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 4.5,
+        "focus_support": 3.9,
+        "spatial_legibility": 4.2
+      },
+      "quotes": [
+        "I could usually find the people I needed, but too often that depended on already being in the right place.",
+        "A quick update sometimes became a small search, which made coordination feel more accidental than shared.",
+        "I wanted one dependable place where the team could reconnect without everyone stopping their work."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.7,
+        "coordination_support": 5.3,
+        "focus_support": 3.8,
+        "spatial_legibility": 4.9
+      },
+      "quotes": [
+        "A glance was often enough to tell who was available, so I could choose a good moment to speak.",
+        "I noticed colleagues needing support earlier and did not have to chase every update.",
+        "I would keep the view open but preserve one quieter edge for conversations that need concentration."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.5,
+        "coordination_support": 4.8,
+        "focus_support": 4.1,
+        "spatial_legibility": 4.4
+      },
+      "quotes": [
+        "The station gave brief check-ins a dependable home without pulling me away from the work around it.",
+        "People were easier to gather for an update, although I still had to look beyond the station for the wider team.",
+        "The strongest part was knowing where a conversation could happen, rather than hoping paths happened to cross."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.9,
+        "coordination_support": 5.4,
+        "focus_support": 4.0,
+        "spatial_legibility": 5.0
+      },
+      "quotes": [
+        "I felt connected to the wider team without having to chase every update.",
+        "There were more natural moments to coordinate, but the room still needed a quiet edge for focused work.",
+        "The combination worked because I could see when contact mattered and knew where to make it happen."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.7,
+        "coordination_support": 4.2,
+        "focus_support": 3.2,
+        "spatial_legibility": 3.8
+      },
+      "quotes": [
+        "I lost time looking for the right person, and by the time I found them another issue was already competing for attention.",
+        "Updates depended too much on chance encounters, which made it hard to keep a shared picture of what was happening.",
+        "I needed a clearer way to reconnect the team without adding another interruption to everyone's work."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.1,
+        "coordination_support": 5.0,
+        "focus_support": 3.1,
+        "spatial_legibility": 4.5
+      },
+      "quotes": [
+        "Seeing who was free helped me avoid interrupting someone who was already occupied.",
+        "I could pick up signs that support was needed sooner, although there was very little visual quiet.",
+        "The openness helped most when I could act on what I saw immediately rather than carrying another unresolved update."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.9,
+        "coordination_support": 4.5,
+        "focus_support": 3.4,
+        "spatial_legibility": 4.0
+      },
+      "quotes": [
+        "The station gave people a place to regroup, which kept several short updates from turning into separate searches.",
+        "It was easier to reconnect after patient work, but the station alone did not tell me who elsewhere needed help.",
+        "I would keep the shared point and make its connection to the rest of the department more legible."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 5.1,
+        "focus_support": 3.3,
+        "spatial_legibility": 4.6
+      },
+      "quotes": [
+        "I could find people and read their availability without repeatedly leaving what I was doing.",
+        "Coordination felt less dependent on luck, though the amount of visible activity could become tiring.",
+        "I would preserve the connection and add a small retreat where a difficult task or conversation can stay protected."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.1,
+        "coordination_support": 3.8,
+        "focus_support": 4.6,
+        "spatial_legibility": 4.0
+      },
+      "quotes": [
+        "I could concentrate, but finding an update sometimes meant breaking away from the task completely.",
+        "The quieter moments were useful; the problem was that I had little warning before coordination became unavoidable.",
+        "I would rather see a need coming and choose the interruption than discover it only after someone reaches me."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.5,
+        "coordination_support": 4.6,
+        "focus_support": 4.5,
+        "spatial_legibility": 4.7
+      },
+      "quotes": [
+        "Seeing more of the team helped me decide when an interruption was worth it.",
+        "The extra awareness was useful, but it also kept more unfinished activity in the corner of my attention.",
+        "A screened work edge beside the open view would let me alternate between awareness and concentration."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 4.1,
+        "focus_support": 4.8,
+        "spatial_legibility": 4.2
+      },
+      "quotes": [
+        "The station made necessary exchanges more predictable, so I could return to focused work quickly.",
+        "Knowing where a brief update belonged reduced the number of open-ended interruptions.",
+        "I would keep the shared point compact and discourage conversations from spilling into the quieter work area."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.7,
+        "coordination_support": 4.7,
+        "focus_support": 4.7,
+        "spatial_legibility": 4.8
+      },
+      "quotes": [
+        "I had better warning that coordination was coming and a clearer place to handle it.",
+        "That predictability helped, but constant exposure to surrounding activity still competed with the task in front of me.",
+        "The layout needs a nearby place where attention can narrow again without losing contact with the team."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.5,
+        "coordination_support": 3.5,
+        "focus_support": 3.9,
+        "spatial_legibility": 3.6
+      },
+      "quotes": [
+        "Every search for an update broke the thread of what I was doing, and it was difficult to recover that focus.",
+        "I could work quietly until a problem reached me, but then the interruption arrived with little warning and more urgency.",
+        "I wanted earlier signals and fewer unnecessary approaches, not simply more contact."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.9,
+        "coordination_support": 4.3,
+        "focus_support": 3.8,
+        "spatial_legibility": 4.3
+      },
+      "quotes": [
+        "The wider view let me judge whether someone truly needed me before I stopped what I was doing.",
+        "It prevented some unnecessary approaches, but the steady movement around me made sustained concentration harder.",
+        "I would keep the visibility and add a clear visual boundary for work that cannot be safely fragmented."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.7,
+        "coordination_support": 3.8,
+        "focus_support": 4.1,
+        "spatial_legibility": 3.8
+      },
+      "quotes": [
+        "Brief exchanges had a clear place, which made them easier to finish and leave behind.",
+        "The station protected some task continuity, although I still received updates without much advance warning.",
+        "A simple signal of who is available would make the shared point less interruptive."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.1,
+        "coordination_support": 4.4,
+        "focus_support": 4.0,
+        "spatial_legibility": 4.4
+      },
+      "quotes": [
+        "I could see a request forming before it reached me and decide whether to respond immediately.",
+        "The coordination was easier to anticipate, but the combined openness left very little refuge for difficult tasks.",
+        "I would add a quiet edge within sight of the team rather than closing the space again."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.4,
+        "coordination_support": 4.2,
+        "focus_support": 4.1,
+        "spatial_legibility": 4.3
+      },
+      "quotes": [
+        "I could stay with patient work, but keeping track of colleagues at the same time took deliberate effort.",
+        "The most difficult moments were the transitions, when I needed help but did not want to abandon continuity at the bedside.",
+        "I wanted support to be easier to reach without making patient conversations feel exposed."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.8,
+        "coordination_support": 5.0,
+        "focus_support": 4.0,
+        "spatial_legibility": 5.0
+      },
+      "quotes": [
+        "Better sightlines helped me find support sooner without leaving the patient area for long.",
+        "I appreciated knowing who was nearby, but sensitive conversations still needed a more protected edge.",
+        "The useful balance was being able to call in help while keeping the patient from feeling on display."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.6,
+        "coordination_support": 4.5,
+        "focus_support": 4.3,
+        "spatial_legibility": 4.5
+      },
+      "quotes": [
+        "The station made it easier to reconnect with the team after patient-facing work.",
+        "I could close one conversation and carry the important part to colleagues without wandering through the department.",
+        "I would keep that handoff point close enough to patients that continuity does not feel broken."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 5.0,
+        "coordination_support": 5.1,
+        "focus_support": 4.2,
+        "spatial_legibility": 5.1
+      },
+      "quotes": [
+        "I could reach support more readily without losing awareness of the patients I was responsible for.",
+        "The team felt accessible, but openness and dignity still needed careful balance.",
+        "I would preserve the connection and strengthen the places where a patient can speak without feeling observed."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.8,
+        "coordination_support": 3.9,
+        "focus_support": 3.4,
+        "spatial_legibility": 3.9
+      },
+      "quotes": [
+        "I kept having to choose between staying present with a patient and stepping away to find support.",
+        "When several needs arrived together, the weak point was not caring for the patient; it was reconnecting that care to the team.",
+        "I wanted help to be visible and reachable without turning the patient area into a public workspace."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.2,
+        "coordination_support": 4.7,
+        "focus_support": 3.3,
+        "spatial_legibility": 4.6
+      },
+      "quotes": [
+        "I could identify support quickly and spend less time away from the patient.",
+        "The wider view helped with coordination, but it also made private moments feel more exposed.",
+        "I would keep the visual connection and add a protected pocket for conversations that need trust and quiet."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.0,
+        "coordination_support": 4.2,
+        "focus_support": 3.6,
+        "spatial_legibility": 4.1
+      },
+      "quotes": [
+        "The station gave me a reliable way to hand information back to the team after patient work.",
+        "That continuity mattered, although I still had to judge when leaving the bedside was worth it.",
+        "A clearer link between the shared point and patient rooms would make support feel less like a separate journey."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.4,
+        "coordination_support": 4.8,
+        "focus_support": 3.5,
+        "spatial_legibility": 4.7
+      },
+      "quotes": [
+        "I could get support without disappearing from the patient area for long.",
+        "The connection helped me protect continuity, but the most open moments were not always the most comfortable for patients.",
+        "I would keep colleagues within reach and give patients stronger control over when they are visible or overheard."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.2,
+        "coordination_support": 4.3,
+        "focus_support": 4.1,
+        "spatial_legibility": 4.5
+      },
+      "quotes": [
+        "I could monitor what was directly around me, but changes elsewhere were easy to miss until someone came looking.",
+        "The space gave me a local picture rather than a departmental one, so weak signals often arrived late.",
+        "I wanted a way to notice emerging needs without turning every movement into an alarm."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.6,
+        "coordination_support": 5.1,
+        "focus_support": 4.0,
+        "spatial_legibility": 5.2
+      },
+      "quotes": [
+        "The broader view reduced blind spots and made emerging needs easier to notice early.",
+        "I could distinguish ordinary movement from the beginning of a coordination problem more often.",
+        "The openness was useful as long as the space also helped me filter what did not require action."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.4,
+        "coordination_support": 4.6,
+        "focus_support": 4.3,
+        "spatial_legibility": 4.7
+      },
+      "quotes": [
+        "The station concentrated useful signals and made it easier to check the team's state.",
+        "It gave me a reliable observation point, though blind spots remained beyond the central area.",
+        "I would strengthen the station's visual links rather than simply making it busier."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.8,
+        "coordination_support": 5.2,
+        "focus_support": 4.2,
+        "spatial_legibility": 5.3
+      },
+      "quotes": [
+        "I had a stronger picture of the department and could catch changes before they reached me as a request.",
+        "More activity was visible, which improved awareness but made filtering essential.",
+        "The design should help important signals stand out instead of assuming that seeing more is always better."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.6,
+        "coordination_support": 4.0,
+        "focus_support": 3.4,
+        "spatial_legibility": 4.1
+      },
+      "quotes": [
+        "I was often reacting to problems only after someone came to find me.",
+        "The area around me was readable, but I had too little warning about what was building elsewhere.",
+        "I needed earlier cues that separated a genuine escalation from ordinary background movement."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.0,
+        "coordination_support": 4.8,
+        "focus_support": 3.3,
+        "spatial_legibility": 4.8
+      },
+      "quotes": [
+        "I could catch emerging coordination needs before they became direct interruptions.",
+        "The wider view reduced blind spots, although the amount of visible motion sometimes made weak signals harder to rank.",
+        "I would keep the sightlines and add clearer territorial cues so urgent activity reads differently from routine work."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.8,
+        "coordination_support": 4.3,
+        "focus_support": 3.6,
+        "spatial_legibility": 4.3
+      },
+      "quotes": [
+        "The station gave me a place to gather several fragments of information into one picture.",
+        "It improved local awareness, but I could still be surprised by activity developing beyond the central area.",
+        "I would connect the station to a few clearer lines of sight rather than adding more noise at the desk."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.2,
+        "coordination_support": 4.9,
+        "focus_support": 3.5,
+        "spatial_legibility": 4.9
+      },
+      "quotes": [
+        "I saw problems forming earlier and could check them before they turned into urgent requests.",
+        "The department felt more legible, but more visible activity also meant more signals competing for attention.",
+        "I would preserve the overview and make escalation cues more distinct from the ordinary rhythm of work."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 4.2,
+        "focus_support": 4.2,
+        "spatial_legibility": 4.3
+      },
+      "quotes": [
+        "I changed strategy with the task, sometimes seeking people out and sometimes staying where others could find me.",
+        "The layout offered several workable routines, but none of them connected the whole department particularly well.",
+        "I wanted more than one way to coordinate so the space could support different kinds of work."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.7,
+        "coordination_support": 5.0,
+        "focus_support": 4.1,
+        "spatial_legibility": 5.0
+      },
+      "quotes": [
+        "I could check availability at a distance and move only when the situation justified it.",
+        "The extra visibility gave me options rather than forcing every coordination need into a face-to-face search.",
+        "I would keep that flexibility and preserve a quieter route for work that benefits from fewer encounters."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.5,
+        "coordination_support": 4.5,
+        "focus_support": 4.4,
+        "spatial_legibility": 4.5
+      },
+      "quotes": [
+        "The station created a reliable coordination point without dictating how every exchange had to happen.",
+        "I could use it when the team needed to gather and bypass it when the task called for a direct route.",
+        "Its value was the extra option, so I would avoid letting it become the only place where information moves."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.9,
+        "coordination_support": 5.1,
+        "focus_support": 4.3,
+        "spatial_legibility": 5.1
+      },
+      "quotes": [
+        "I had several workable strategies and could shift between coordination, patient work, and concentration.",
+        "The space did not solve every tension, but it gave me more ways to respond without losing the team.",
+        "I would keep the combination flexible and make the quiet and shared zones equally easy to read."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.7,
+        "coordination_support": 3.9,
+        "focus_support": 3.5,
+        "spatial_legibility": 3.9
+      },
+      "quotes": [
+        "I kept switching between finding people, staying visible, and protecting the task in front of me.",
+        "The layout allowed adaptation, but too much of that adaptation depended on me noticing the problem late.",
+        "I wanted clearer cues about when to move, when to wait, and where the team was likely to reconnect."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.1,
+        "coordination_support": 4.7,
+        "focus_support": 3.4,
+        "spatial_legibility": 4.6
+      },
+      "quotes": [
+        "I could check the situation from a distance and avoid several unnecessary trips.",
+        "The wider view gave me options, though choosing among all those signals became its own task.",
+        "I would preserve the visibility and make the most important coordination points easier to distinguish."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 3.9,
+        "coordination_support": 4.2,
+        "focus_support": 3.7,
+        "spatial_legibility": 4.1
+      },
+      "quotes": [
+        "The station gave me a reliable fallback when several demands needed to be reconciled quickly.",
+        "I could gather information there and then choose whether the next step belonged with a patient, a colleague, or focused work.",
+        "I would keep it as one adaptable hub rather than allowing every activity to accumulate around it."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "preview_placeholder",
+      "sample_size": null,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 4.8,
+        "focus_support": 3.6,
+        "spatial_legibility": 4.7
+      },
+      "quotes": [
+        "I could change tactics without losing contact with the team, which helped when priorities shifted quickly.",
+        "The combined layout gave me several useful choices, but I still had to protect myself from taking in too much at once.",
+        "I would keep the range of options and sharpen the boundaries between shared attention and focused work."
+      ]
+    }
+  ]
+}

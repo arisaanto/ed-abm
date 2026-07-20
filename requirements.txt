@@ -1,0 +1,8 @@
+# Core ABM, verification, and figure/table dependencies.
+# Part 3 GPU inference uses requirements-llm.txt in a separate environment.
+numpy
+pandas
+scipy
+matplotlib
+networkx
+pyabc

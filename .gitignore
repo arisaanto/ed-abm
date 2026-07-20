@@ -1,0 +1,36 @@
+# Python environments and caches
+.env
+.venv/
+env/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors and operating-system metadata
+.DS_Store
+.idea/
+.vscode/
+
+# Cluster logs, archives, and model caches
+logs/
+slurm-*.out
+*.zip
+*.tar.gz
+.cache/
+.huggingface/
+hf_cache/
+
+# Restricted or local source data
+shadowing_with-participant-info.csv
+EVIDENT_ShadowingDataset_ARIS.ipynb
+ABM_results/
+
+# Regenerable outputs. Publication-ready aggregate findings are retained.
+outputs/*
+!outputs/README.md
+!outputs/findings/
+!outputs/findings/**
+

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Interactive persona explorer for the spatial ED agent-based model.">
+    <title>Persona Explorer</title>
+    <link rel="stylesheet" href="styles.css?v=20260719k">
+  </head>
+  <body>
+    <main class="game-shell" aria-labelledby="page-title">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1 id="page-title">Persona Explorer</h1>
+        </div>
+
+        <div class="control-deck" aria-label="Study view controls">
+          <fieldset class="control-group">
+            <legend>Scenario</legend>
+            <div class="segment" id="scenario-control"></div>
+          </fieldset>
+          <fieldset class="control-group condition-control">
+            <legend>Spatial condition</legend>
+            <div class="segment" id="condition-control"></div>
+          </fieldset>
+        </div>
+
+      </header>
+
+      <section class="explorer-grid">
+        <nav class="persona-rail" aria-label="Choose a persona">
+          <p class="rail-label">Select persona</p>
+          <div class="persona-list" id="persona-list"></div>
+        </nav>
+
+        <section class="persona-stage" aria-live="polite">
+          <div class="speech-bubble" id="speech-bubble">
+            <div class="speech-bubble-inner">
+              <blockquote id="qualitative-response"></blockquote>
+              <div class="response-controls" id="response-controls" aria-label="Qualitative responses">
+                <button id="next-response" type="button" aria-label="Next qualitative response" title="Next response">&gt;</button>
+              </div>
+            </div>
+            <span class="speech-tail" aria-hidden="true"></span>
+          </div>
+
+          <div class="character-plinth">
+            <img id="character-sprite" alt="" width="420" height="600">
+          </div>
+        </section>
+
+        <aside class="stats-panel">
+          <header class="persona-profile-header">
+            <span id="persona-code">01</span>
+            <h2 id="persona-caption">Team Connector</h2>
+          </header>
+
+          <section class="stat-section profile-section">
+            <div class="section-heading">
+              <h2>Persona profile</h2>
+            </div>
+            <div class="stat-list" id="ocean-stats"></div>
+            <p class="measurement-note">Illustrative mapping of workplace orientation, not a measured psychometric profile.</p>
+          </section>
+
+          <section class="stat-section experience-section">
+            <div class="section-heading">
+              <h2>Experience</h2>
+              <span id="sample-size">n pending</span>
+            </div>
+            <div class="score-list" id="experience-scores"></div>
+          </section>
+
+          <section class="signal-strip" aria-label="Selected study context">
+            <span id="context-scenario">Normal load</span>
+            <span aria-hidden="true">×</span>
+            <span id="context-condition">Baseline</span>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="app.js?v=20260719f" type="module"></script>
+  </body>
+</html>

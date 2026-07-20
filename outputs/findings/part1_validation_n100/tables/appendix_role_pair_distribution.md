@@ -1,0 +1,16 @@
+### Appendix table. Role-pair distribution
+
+| Role pair | Observed | Simulated | Difference |
+| --- | --- | --- | --- |
+| Coordination nurse + Nurse | 23.4% | 19.5% | -3.9 pp |
+| Nurse + Nurse | 20.9% | 18.3% | -2.6 pp |
+| Nurse + Patient | 17.5% | 17.2% | -0.3 pp |
+| Doctor + Nurse | 7.2% | 13.1% | +5.8 pp |
+| Coordination nurse + Patient | 10.6% | 11.2% | +0.6 pp |
+| Doctor + Patient | 4.7% | 9.4% | +4.7 pp |
+| Doctor + Doctor | 7.2% | 6.5% | -0.7 pp |
+| Coordination nurse + Doctor | 3.3% | 4.8% | +1.4 pp |
+| Coordination nurse + Support | 2.5% | 0.0% | -2.5 pp |
+| Nurse + Support | 0.6% | 0.0% | -0.6 pp |
+| Nurse + Unknown | 1.1% | 0.0% | -1.1 pp |
+| Patient + Support | 0.8% | 0.0% | -0.8 pp |

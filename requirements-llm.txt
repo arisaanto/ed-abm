@@ -1,0 +1,5 @@
+# Part 3 offline vLLM environment. Install this in a dedicated virtual
+# environment; vLLM resolves compatible torch/transformers/Hugging Face
+# dependencies. The core packages are included because Part 3 imports the ABM.
+-r requirements.txt
+vllm>=0.19.0

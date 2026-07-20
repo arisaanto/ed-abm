@@ -1,0 +1,90 @@
+{
+  "spec_version": "part3_appraisal_analysis_v1",
+  "status": "locked_before_appraisal_inference",
+  "claim_boundary": "Synthetic persona-conditioned appraisals of simulated experience; not Zurich ED staff testimony, preferences, or psychometric measurement.",
+  "paired_observation": "condition-paired simulated staff shift identified by scenario, seed, assignment round, persona, role, and staff id",
+  "primary_inferential_unit": "simulation seed; matched staff-shift deltas are averaged within seed before uncertainty is calculated",
+  "packet_selection": "one four-condition-paired staff shift for every scenario-persona-seed combination; all ten seeds retained; roles balanced 4/3/3 within each scenario-persona block",
+  "expected_seed_count_per_scenario_persona": 10,
+  "expected_paired_unit_count": 100,
+  "expected_agent_shift_count": 400,
+  "expected_packet_count": 800,
+  "scenarios": [
+    "normal_load",
+    "high_load_high_acuity"
+  ],
+  "conditions": [
+    "baseline",
+    "cockpit_only",
+    "nursta_only",
+    "both"
+  ],
+  "interventions": [
+    "cockpit_only",
+    "nursta_only",
+    "both"
+  ],
+  "personas": [
+    "adaptive_generalist",
+    "focus_protector",
+    "patient_advocate",
+    "team_connector",
+    "vigilant_monitor"
+  ],
+  "roles": [
+    "CoordinationNurse",
+    "Nurse",
+    "Doctor"
+  ],
+  "primary_dimensions": [
+    "team_awareness",
+    "interruption_burden",
+    "task_continuity",
+    "patient_accessibility",
+    "privacy_and_control",
+    "spatial_legibility",
+    "overall_person_space_fit"
+  ],
+  "dimension_directions": {
+    "team_awareness": "higher_is_more_favorable",
+    "interruption_burden": "lower_is_more_favorable",
+    "task_continuity": "higher_is_more_favorable",
+    "patient_accessibility": "higher_is_more_favorable",
+    "privacy_and_control": "higher_is_more_favorable",
+    "spatial_legibility": "higher_is_more_favorable",
+    "overall_person_space_fit": "higher_is_more_favorable"
+  },
+  "primary_contrasts": [
+    "cockpit_only - baseline",
+    "nursta_only - baseline",
+    "both - baseline"
+  ],
+  "uncertainty_method": "paired mean difference with Student-t 95% confidence interval across seed-level means of matched staff-shift deltas; role-direction and seed-sign consistency reported as convergence diagnostics",
+  "multiplicity_policy": "Effect magnitudes and uncertainty are primary. No family of binary significance claims or post-hoc thresholding will be used.",
+  "convergence_definition": "Within each scenario-persona-dimension contrast, report seed-mean sign consistency and agreement of role-specific descriptive mean directions with the overall mean direction.",
+  "polarization_definition": "For each scenario-condition-dimension, report the standard deviation and range of the five persona means, plus change from baseline. This is dispersion among designed orientations, not human psychological polarization.",
+  "worst_case_fit_definition": "For overall person-space fit, report the persona with the smallest paired mean intervention effect and its 95% interval, along with the number of personas with positive and negative mean effects.",
+  "manual_review_sampling": "One complete interview bundle per scenario-condition-persona cell, selected deterministically before reviewing prose.",
+  "manual_review_criteria": [
+    "Every factual event claim is supported by cited simulated evidence.",
+    "The answer does not invent diagnoses, patient outcomes, motives, emotions, dialogue, or unobserved events.",
+    "The public answer sounds like concise workplace reflection rather than a translation of metrics or an itinerary.",
+    "Grounded pattern, persona-conditioned interpretation, latent need, and design hypothesis remain epistemically distinct.",
+    "Any design hypothesis includes a plausible tradeoff and is not described as an observed result.",
+    "The answer does not mention prompts, logs, metrics, evidence ids, the ABM, or persona labels.",
+    "Condition and scenario are not named unless they are represented in the visible evidence language.",
+    "Survey score, rationale, confidence, and rateability are mutually coherent.",
+    "Insufficient evidence is used rather than filling evidence gaps from the persona description.",
+    "No response is presented as human testimony or a measured Zurich staff preference."
+  ],
+  "manual_coding_fields": [
+    "primary theme",
+    "secondary theme",
+    "spatial feature",
+    "workplace consequence",
+    "orientation priority",
+    "design hypothesis category",
+    "grounding status",
+    "coder notes"
+  ]
+}
