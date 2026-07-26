@@ -246,15 +246,15 @@ sha256sum \
   src/personas.py \
   src/simulation.py \
   src/vllm_backend.py \
-  scripts/analyze_part3_closed_loop_main.py \
-  scripts/build_part3_appraisal_packets.py \
-  scripts/check_part3_closed_loop_preflight.py \
-  scripts/plan_part3_synthetic_study.py \
-  scripts/run_part3_closed_loop.py \
-  scripts/run_part3_closed_loop_batch.py \
-  scripts/run_single.py \
-  scripts/verify_part3_closed_loop_gate.py \
-  scripts/verify_part3_closed_loop_pilot.py \
+  scripts/analysis/analyze_part3_closed_loop_main.py \
+  scripts/build/build_part3_appraisal_packets.py \
+  scripts/validation/check_part3_closed_loop_preflight.py \
+  scripts/build/plan_part3_synthetic_study.py \
+  scripts/run/run_part3_closed_loop.py \
+  scripts/run/run_part3_closed_loop_batch.py \
+  scripts/run/run_single.py \
+  scripts/validation/verify_part3_closed_loop_gate.py \
+  scripts/validation/verify_part3_closed_loop_pilot.py \
   manifests/part3_closed_loop_main_n10.csv \
   jobs/snellius_part3_qwen36_closed_loop_main_n10.sbatch \
   > "${SCRATCH_DIR}/source_sha256.txt"
@@ -264,7 +264,7 @@ if [[ "${RESUME}" == "1" ]]; then
   RUNNER_RESUME_ARGS+=(--resume)
 fi
 
-python3 scripts/run_part3_closed_loop_batch.py \
+python3 scripts/run/run_part3_closed_loop_batch.py \
   --manifest "${MANIFEST}" \
   --output-root "${SCRATCH_DIR}/main" \
   --batch-name part3_closed_loop_main_n10 \
@@ -278,7 +278,7 @@ python3 scripts/run_part3_closed_loop_batch.py \
   --inference-batch-wait-ms 75 \
   "${RUNNER_RESUME_ARGS[@]}"
 
-python3 scripts/verify_part3_closed_loop_pilot.py \
+python3 scripts/validation/verify_part3_closed_loop_pilot.py \
   --output-root "${SCRATCH_DIR}/main" \
   --manifest "${MANIFEST}" \
   --study-design main \
@@ -311,7 +311,7 @@ if failed:
 print("Closed-loop main study passed all integrity and design checks")
 PY
 
-python3 scripts/analyze_part3_closed_loop_main.py \
+python3 scripts/analysis/analyze_part3_closed_loop_main.py \
   --output-root "${SCRATCH_DIR}/main" \
   --integrity-json "${SCRATCH_DIR}/integrity_check.json" \
   --output-dir "${SCRATCH_DIR}/analysis"

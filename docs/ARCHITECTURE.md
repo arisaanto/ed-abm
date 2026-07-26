@@ -23,7 +23,7 @@ Condition invariants are implemented in `src/conditions.py`: baseline and `cockp
 
 ## Sensitivity Overrides
 
-`scripts/run_single.py` allowlists active behavioral overrides and applies them before `Simulation` construction within an independent one-run process. Scenario overrides therefore enter the copied per-run scenario definition without changing no-override defaults. Intended/effective values and pressure-gate counters are written to each summary. Incomplete or out-of-range scenario sensitivity arguments fail before simulation construction.
+`scripts/run/run_single.py` allowlists active behavioral overrides and applies them before `Simulation` construction within an independent one-run process. Scenario overrides therefore enter the copied per-run scenario definition without changing no-override defaults. Intended/effective values and pressure-gate counters are written to each summary. Incomplete or out-of-range scenario sensitivity arguments fail before simulation construction.
 
 `SCENARIO_PRESSURE_ACTION_THRESHOLD` targets the existing active `pressure_action_threshold` gate. The retired `SCENARIO_PRESSURE_STATION_SOCIAL_SUPPRESSION` factor is not allowlisted: its value sat behind a deterministic earlier gate and produced identical low/high outputs.
 
@@ -33,7 +33,8 @@ The optional Part 3 scaffold is downstream and opt-in:
 
 - `src/personas.py`: validated staff personas plus role-independent Part 3 cognitive orientations and balanced assignment logic;
 - `src/interviews.py`: explicitly synthetic survey/interview schemas;
-- `src/interaction.py`: rule-based memory, retrieval, and reflection hooks; it does not load vLLM;
+- `src/interaction.py`: bounded rule-based interaction engine plus the bridge
+  to the opt-in Part 3 controller; it does not load vLLM;
 - `src/cognitive_policy.py`: shared conservative context-token estimator for Part 3 packet builders;
 - `src/part3_closed_loop.py`: opt-in bounded causal controller and grounded memory policy;
 - `src/vllm_backend.py`: structured offline and brokered closed-loop inference backend, imported only by explicit Part 3 GPU workflows.

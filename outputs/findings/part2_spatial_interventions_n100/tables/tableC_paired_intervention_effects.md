@@ -1,10 +1,10 @@
-| Scenario | Contrast | Δ F2F/hour [95% CI] | Δ actionable opportunities [95% CI] | Δ staff–staff share, pp [95% CI] | Δ patient-facing share, pp [95% CI] | Δ corridor share, pp [95% CI] |
+| Scenario | Contrast | Δ F2F/h [95% CI] | Δ opportunities [95% CI] | Δ staff–staff (pp) [95% CI] | Δ patient-facing (pp) [95% CI] | Δ corridor (pp) [95% CI] |
 | --- | --- | --- | --- | --- | --- | --- |
-| Normal load | COCPIT only − Baseline | **+9.25 [+8.81, +9.70]** | +692.7 [+638.8, +746.6] | +11.1 [+10.3, +11.9] | -12.7 [-13.6, -11.8] | +10.7 [+10.0, +11.5] |
-| Normal load | NURSTA only − Baseline | **+0.07 [-0.36, +0.50]** | +23.6 [-26.4, +73.5] | -0.1 [-0.9, +0.8] | -0.1 [-1.0, +0.9] | +0.1 [-0.6, +0.9] |
-| Normal load | Both − Baseline | **+8.96 [+8.53, +9.38]** | +688.0 [+641.1, +735.0] | +11.0 [+10.3, +11.7] | -12.8 [-13.6, -12.0] | +10.3 [+9.5, +11.1] |
-| High load | COCPIT only − Baseline | **+6.95 [+6.51, +7.39]** | +523.1 [+495.1, +551.2] | +12.1 [+11.3, +12.9] | -13.9 [-14.9, -12.9] | +7.6 [+6.8, +8.3] |
-| High load | NURSTA only − Baseline | **+0.23 [-0.13, +0.60]** | +1.1 [-21.6, +23.8] | +0.7 [-0.3, +1.6] | -0.8 [-1.8, +0.3] | +0.1 [-0.7, +0.9] |
-| High load | Both − Baseline | **+7.67 [+7.23, +8.11]** | +538.0 [+509.1, +566.8] | +12.7 [+11.8, +13.6] | -14.7 [-15.7, -13.7] | +7.5 [+6.5, +8.4] |
+| Normal load | COCPIT only − Baseline | **+9.25 [+8.81, +9.70]** | **+692.7 [+638.8, +746.6]** | **+11.1 [+10.3, +11.9]** | **-12.7 [-13.6, -11.8]** | **+10.7 [+10.0, +11.5]** |
+| Normal load | NURSTA only − Baseline | +0.07 [-0.36, +0.50] | +23.6 [-26.4, +73.5] | -0.1 [-0.9, +0.8] | -0.1 [-1.0, +0.9] | +0.1 [-0.6, +0.9] |
+| Normal load | Both − Baseline | **+8.96 [+8.53, +9.38]** | **+688.0 [+641.1, +735.0]** | **+11.0 [+10.3, +11.7]** | **-12.8 [-13.6, -12.0]** | **+10.3 [+9.5, +11.1]** |
+| High load | COCPIT only − Baseline | **+6.95 [+6.51, +7.39]** | **+523.1 [+495.1, +551.2]** | **+12.1 [+11.3, +12.9]** | **-13.9 [-14.9, -12.9]** | **+7.6 [+6.8, +8.3]** |
+| High load | NURSTA only − Baseline | +0.23 [-0.13, +0.60] | +1.1 [-21.6, +23.8] | +0.7 [-0.3, +1.6] | -0.8 [-1.8, +0.3] | +0.1 [-0.7, +0.9] |
+| High load | Both − Baseline | **+7.67 [+7.23, +8.11]** | **+538.0 [+509.1, +566.8]** | **+12.7 [+11.8, +13.6]** | **-14.7 [-15.7, -13.7]** | **+7.5 [+6.5, +8.4]** |
 
-*Note.* All effects use paired seeds (n=100 per scenario and contrast). Values in brackets are 95% confidence intervals for paired mean differences. Effect magnitudes and uncertainty are reported in their original units; standardized effects and p-values are intentionally not foregrounded.
+*Note.* All effects use paired seeds (n=100 per scenario and contrast). Values in brackets are 95% confidence intervals for paired mean differences. Effect magnitudes and uncertainty are reported in their original units; standardized effects and p-values are intentionally not foregrounded. Bold values have 95% confidence intervals that exclude zero.

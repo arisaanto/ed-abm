@@ -24,10 +24,18 @@ The remaining station-heavy redistribution and approximate topic semantics are l
 
 Authoritative report: `outputs/findings/part1_validation_n100/part1_validation_n100_report.md`.
 
-Standard documented validation command, retained for reproducibility rather than routine rerunning:
+Canonical one-run entrypoint, retained for software reproducibility rather
+than routine rerunning of the accepted n100 batch:
 
 ```bash
-python3 main.py --validation-candidate --validation-target care_area --duration 43200 --n-runs 3 --warmup-seconds 7200
+python3 main.py \
+  --scenario-mode normal_load \
+  --condition baseline \
+  --seed 1 \
+  --duration 43200 \
+  --warmup-seconds 7200 \
+  --validation-target care_area \
+  --output-dir outputs/manual/baseline_seed_1
 ```
 
 ## Part 2 - Spatial Interventions
@@ -59,9 +67,9 @@ Authoritative results: `outputs/findings/part2_parameter_sensitivity_n20/`.
 
 ## Part 3 - Bounded Synthetic Design-Evaluation Layer
 
-**The 400-run closed-loop causal study is complete; end-of-shift appraisal inference is pending.** Part 3 treats the ED intervention as the interface and crosses five role-independent cognitive orientations with the validated staff roles. The ABM remains responsible for physics, workflow, patient state, proximity, and feasible actions. The opt-in Qwen policy chooses among feasible discretionary interaction actions and retrieves source-linked memories; it never enters the default Part 1/2 pipeline.
+**The 400-run closed-loop causal study, end-of-shift appraisal inference, and matched architecture ablation are complete.** Part 3 treats the ED intervention as the interface and crosses five role-independent cognitive orientations with the validated staff roles. The ABM remains responsible for physics, workflow, patient state, proximity, and feasible actions. The opt-in Qwen policy chooses among feasible discretionary interaction actions and retrieves source-linked memories; it never enters the default Part 1/2 pipeline.
 
-The paired main design contains 2 scenarios x 4 conditions x 10 seeds x 5 persona-assignment rounds = 400 runs. All 400 summaries are present. Technical integrity, persona exposure balance, common exogenous arrival streams, temporal coverage, and sampling coverage passed. A paired sample of 360 agent-shifts produced 720 survey/interview packets with complete scenario-persona-role strata and a passing CPU preflight. Those packets are not scientific appraisal results until the separate GPU inference and verification job completes.
+The paired main design contains 2 scenarios x 4 conditions x 10 seeds x 5 persona-assignment rounds = 400 runs. All 400 summaries are present. Technical integrity, persona exposure balance, common exogenous arrival streams, temporal coverage, and sampling coverage passed. The final condition-paired selection retained 100 paired units across all seeds, producing 800 verified survey/interview packets (400 survey and 400 interview packets). The matched prompt-level 2 x 2 architecture ablation used 120 fixed observed opportunities per cell and completed without rerunning the ABM.
 
 Personas are preregistered synthetic cognitive orientations with transparent workplace priors. Role is retained as a blocking variable, and every staff id cycles through every persona. Outputs must cite evidence IDs and carry `not_human_data: true`; the optional OCEAN character display is a derived ordinal crosswalk, not psychometric measurement and not a policy input.
 
@@ -69,9 +77,9 @@ Authoritative plan: `docs/PART3_PLAN.md`.
 
 ## Implemented / Planned / Deprecated
 
-- **Implemented:** Part 1 n100, Part 2 n100, repaired visibility-layer spatial audit, completed-n100 robustness, final two-phase four-factor n20 sensitivity evidence, and the Part 3 400-run closed-loop causal study.
+- **Implemented:** Part 1 n100, Part 2 n100, repaired visibility-layer spatial audit, completed-n100 robustness, final two-phase four-factor n20 sensitivity evidence, the Part 3 400-run closed-loop causal study, 800 verified appraisal packets, and the matched 2 x 2 cognitive-architecture ablation.
 - **Completed sensitivity screen:** 960 retained valid original runs plus 320 pressure-threshold replacement runs; final total 1,280.
-- **Pending:** verified GPU generation and analysis of the 720 paired Part 3 appraisal packets.
+- **Completed Part 3 appraisal layer:** 100 condition-paired units, 800 verified packets, prespecified seed-paired fit analysis, reviewed qualitative bundles, and recurrent design-priority coding.
 - **Deprecated:** descriptions of Part 2 as an n20/n50 pilot; the n10 +/-20% sensitivity design; seven generic Part 2 plots as the final paper figure set.
 
 ## Do Not Claim

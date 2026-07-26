@@ -18,10 +18,11 @@ inference and are reserved for later post-run reflection.
 The subsequent main experiment completed 400/400 paired runs across two
 scenarios, four spatial conditions, ten seeds, and five balanced assignment
 rounds. Technical integrity, persona-role exposure, common exogenous arrival
-streams, temporal coverage, and sampling coverage passed. The next outstanding
-phase is verified offline inference over 800 paired end-of-shift survey and
-interview packets; until that job completes, qualitative appraisal findings are
-not available.
+streams, temporal coverage, and sampling coverage passed. Verified offline
+inference also completed over 800 paired end-of-shift survey and interview
+packets. The matched prompt-level 2 x 2 architecture ablation of persona
+conditioning and grounded memory is complete; it reused accepted main-study
+opportunities and did not rerun the ABM.
 
 ## Research Contribution
 
@@ -207,12 +208,18 @@ and credible interpretation cannot be established mechanically.
 
 ## Architecture Ablation
 
-Four variants separate language, persona, and memory effects:
+The primary factorial comparison separates persona conditioning and grounded
+memory in four LLM cells:
 
-1. rule-based Part 2 reference;
-2. generic LLM without persona or memory;
-3. persona-conditioned LLM without longitudinal memory;
-4. persona-conditioned LLM with memory and reflection.
+1. neutral orientation without memory;
+2. neutral orientation with memory;
+3. persona-conditioned LLM without memory;
+4. persona-conditioned LLM with memory.
+
+The existing rule action is retained as a separate descriptive comparator. It
+is not a factorial cell because the rule policy contains neither the same
+language-model architecture nor the same persona construct, and action
+agreement with that policy is not a validity target.
 
 The ablation is not scored mainly by empirical topic similarity. Primary
 outcomes are:
@@ -229,6 +236,25 @@ outcomes are:
 
 Empirical topic similarity is a secondary plausibility boundary: an LLM should
 not improve semantic resemblance by violating feasibility or fabricating facts.
+
+The executable ablation uses 120 balanced, memory-bearing opportunities (two
+scenarios x four conditions x five source personas x three roles). All four
+factorial cells are generated in the same inference run: full-persona/full-memory,
+neutral-orientation/full-memory, full-persona/no-memory, and
+neutral-orientation/no-memory. This produces 480 Qwen packets and 120 complete
+matched 2 x 2 sets. The accepted main-study full-persona/full-memory response
+is retained only as an external reproducibility reference. This estimates
+prompt-level component substitution effects on fixed opportunities. It is not a second
+closed-loop trajectory experiment and cannot establish long-run feedback
+effects of removing memory. Source selection is also balanced at 12
+opportunities per seed; estimates are equal-weighted across the 120 design
+strata rather than frequency-weighted to the natural opportunity ecology.
+
+Before any GPU use, run
+`jobs/snellius_part3_architecture_ablation_preflight.sbatch`. The GPU job
+`jobs/snellius_part3_qwen36_architecture_ablation.sbatch` refuses unbalanced
+packets, prompt leakage, mixed model revisions, thinking-enabled source data,
+or a model revision different from the accepted main study.
 
 ## Analysis Contract
 
@@ -333,7 +359,7 @@ therefore reports `scientific_manual_review_required` separately.
 ### Phase 4: closed-loop pilot
 
 - first pass the local deterministic mock-controller check in
-  `scripts/check_part3_closed_loop.py`;
+  `scripts/validation/check_part3_closed_loop.py`;
 - before the accepted main execution, pass
   `jobs/snellius_part3_closed_loop_main_n10_preflight.sbatch`, which exercises
   the packet builder, provider adapter, controller, simulation hook, exports,
@@ -493,15 +519,14 @@ completed trajectories. One full interview per scenario-condition-persona cell
 naturalness, conjecture labels, and design tradeoffs. Automated theme discovery
 is not performed before that review.
 
-Phase 5 does not include a broad architecture grid. A no-memory ablation is
-only justified after the paired main result if grounded-memory context
-materially changes interpretation. This preserves the remaining
-GPU budget for an evidence-driven follow-up rather than a speculative rerun.
+Phase 5 did not include a broad architecture grid. The subsequent bounded
+ablation was justified by the paired main result and tested only persona
+conditioning and grounded memory on fixed observed opportunities.
 
-### Prepared component ablations (not executed)
+### Completed component ablation
 
-Two matched, post-run packet ablations are prepared for an evidence-driven
-follow-up without rerunning the ABM:
+Two matched, post-run packet substitutions were crossed in a 2 x 2 design
+without rerunning the ABM:
 
 - **Neutral orientation:** replace the five designed decision priors with a
   common 0.5 profile while retaining the exact evidence and originally
@@ -509,20 +534,20 @@ follow-up without rerunning the ABM:
 - **No memory:** retain the assigned persona and exact decision evidence while
   removing the model-visible episodic-memory context.
 
-`scripts/build_part3_ablation_packets.py` selects one memory-bearing model
+`scripts/build/build_part3_ablation_packets.py` selects one memory-bearing model
 opportunity per scenario-condition-persona-role stratum from the accepted main
-study. The resulting 120 matched source opportunities produce 240 blinded
-packets, while the original full-persona/full-memory Qwen response remains
-evaluator-side as the reference. The CPU preflight requires complete strata,
-exact variant pairing, no memory leakage, a genuinely neutral profile, and no
-evaluator metadata in the model-visible packet.
+study. The resulting 120 matched source opportunities produce 480 blinded
+packets spanning all four persona-by-memory cells. The original main-study
+full-persona/full-memory response remains evaluator-side as a reproducibility
+reference rather than a factorial cell. The CPU preflight requires complete
+strata, exact variant pairing, no memory leakage, a genuinely neutral profile,
+and no evaluator metadata in the model-visible packet.
 
 These are prompt-level component substitutions, not new closed-loop
-trajectories. They can test whether orientation and memory alter decisions on
+trajectories. They test whether orientation and memory alter decisions on
 fixed observed opportunities. They cannot estimate how a no-memory or neutral
-policy would recursively change the later opportunity ecology. Execution is
-therefore optional and should occur only if the appraisal and main-study
-interpretation justify its GPU cost.
+policy would recursively change the later opportunity ecology. The result is
+therefore retained as an appendix-level architecture check.
 
 ## Failure Criteria
 

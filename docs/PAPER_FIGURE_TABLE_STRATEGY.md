@@ -18,15 +18,28 @@ The spatial null comparison remains a table. The official seed-level KDE/spatial
 
 1. **Four-condition intervention floorplan.** Show baseline, COCPIT transparency, moved NURSTA, and both. Distinguish physical barriers, visibility occluders, and station standing/attractor semantics.
 2. **Comparable interaction spatial density.** Use the validation-counted `interaction_events.csv` points with identical spatial extent, binning/bandwidth, and scale across conditions.
-3. **Final F2F sensitivity response.** Use the final low/high paired-delta figure as a main or near-main robustness visual. It communicates effect magnitude and uncertainty more directly than the verdict matrix.
+3. **Spatial coordination ecology.** Show the Baseline-to-Both reduction in
+   interaction separation and role-location segregation.
+
+Retain the final low/high paired-delta sensitivity figure as a supplementary
+robustness visual. It communicates effect magnitude and uncertainty more
+directly than the verdict matrix.
 
 ## Part 2 Tables
 
-1. Experiment design and integrity.
-2. Corrected targeted spatial-affordance and movement metrics.
-3. Main paired intervention effects by scenario.
-4. Completed-n100 robustness supplement.
-5. Compact sensitivity table listing the four active factors, the assumption each probes, and the qualitative outcome. Keep the final 528-row detailed table in the supplement.
+1. movement effects;
+2. whole-space VGA-style spatial metrics;
+3. main paired intervention effects by scenario;
+4. coordination-friction profile;
+5. role-specific movement and staff-contact decomposition for Both versus
+   Baseline;
+6. compact sensitivity values and the corrected detailed sensitivity
+   supplement.
+
+The paper-facing tables intentionally omit station occupancy from the movement
+table, the redundant through-vision proxy from the VGA table, and duplicate
+separation/segregation change columns from the coordination profile. Exact
+paired changes remain in the corresponding figures or source CSVs.
 
 Preferred compact sensitivity table:
 
@@ -45,9 +58,58 @@ Preferred compact sensitivity table:
 - The old space-syntax draft must not be reused because it preceded the visibility-layer repair.
 - The final two-phase verdict matrix is supplementary diagnostics, not the preferred sensitivity figure.
 
+## Part 3
+
+Use the static persona atlas as an **unnumbered preview** linked to the
+interactive explorer. It is not a substantive result figure. OCEAN is a
+presentation crosswalk, not a measured psychometric result.
+
+Retain three numbered figures:
+
+1. **Cognitive architecture.** Separate the during-shift causal decision loop
+   from the read-only post-shift appraisal and interview pathway.
+2. **Common affordance, heterogeneous uptake.** Contrast the nearly common
+   visibility gain with persona-specific LLM engagement changes.
+3. **Inclusive person-space fit.** Show the five persona distributions and the
+   ensemble average and fit floor for Baseline versus Both. The primary result
+   is the high-load increase in average fit and fit floor together with reduced
+   between-orientation disparity.
+
+Retain three main tables:
+
+1. high-load persona appraisal profiles, combining four core quantitative
+   dimensions with one representative exact design response;
+2. ensemble average, fit-floor, and between-orientation-disparity effects;
+3. recurrent synthetic design priorities as a persona-by-priority percentage
+   matrix, with explicit overlap and synthetic-data boundaries.
+
+Keep the matched 2 x 2 persona-conditioning by grounded-memory ablation as one
+compact appendix table.
+
+Use bold table values sparingly: only prespecified defaults, the principal
+reference row, recurrent top-ranked qualitative priorities, or estimates whose
+95% confidence intervals exclude zero. Do not bold an entire effect column when
+some intervals include zero.
+
+Do not promote trace-fit associations to a paper table. The movement,
+experienced-visibility, interaction-volume, and interaction-spacing
+correlations are weak, scenario-dependent, and partly endogenous because the
+appraisal model received compressed trace evidence. Retain them only as an
+internal analytic audit.
+
 ## Full-Project Conceptual Figures
 
-Possible presentation/thesis figures include the Part 1-Part 2-Part 3 roadmap, ED ecosystem, reason-gated interaction mechanism, routine versus high-load scenario, bounded Part 3 cognitive layer, and a `space -> experience -> coordination -> operation` summary.
+Retain two cross-study explanatory figures:
+
+1. **Study overview.** Part 1 validates, Part 2 intervenes, and Part 3
+   interprets heterogeneous uptake and person-space fit.
+2. **Interaction-generation pipeline.** Proximity, mutual visibility, and
+   operational feasibility create an actionable opportunity; a bounded policy
+   records either an F2F interaction or a missed opportunity.
+
+The Part 3 cognitive-architecture figure already contains the evidence
+retrieval-to-appraisal pathway. Do not add a separate memory-to-response figure
+unless a venue specifically requests more methodological detail.
 
 AI assistance is acceptable for conceptual composition or stylized explanatory scenes. AI must not generate validation charts, KDE maps, effect plots, statistical tables, floorplan measurements, or any exact quantitative result.
 

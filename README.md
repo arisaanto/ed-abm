@@ -1,56 +1,66 @@
 # Spatially Explicit ED Interaction Model
 
-A workflow-constrained agent-based model of face-to-face interaction in a
-bounded emergency-department care area. The model separates physical routing
-geometry from visibility geometry, allowing spatial interventions to alter
-intervisibility without changing walls, movement, or clinical workflow.
+A workflow-constrained, spatially embodied agent-based model of face-to-face
+interaction in an emergency department. The study validates the model against
+empirical shadowing data, tests visibility and workstation interventions, and
+examines how five bounded cognitive orientations take up the resulting spatial
+affordances.
 
-![Part 2 intervention layouts](outputs/findings/part2_spatial_interventions_n100/figures/figA_intervention_layout.png)
+![Study design: validate, intervene, and interpret](outputs/findings/study_overview/figures/study_design_overview.png)
 
-## Study Status
+## Study at a Glance
 
-| Part | Status | Scope |
-|---|---|---|
-| Part 1 | Completed and frozen | Validation of the non-LLM embodied interaction engine against empirical shadowing data (`n=100`). |
-| Part 2 | Completed and frozen | Paired comparison of four spatial conditions in two scenarios (`800` runs), plus a two-phase four-factor sensitivity screen. |
-| Part 3 causal study | Completed | Five balanced cognitive orientations crossed with role, condition, and scenario (`400` closed-loop runs); technical and design gates passed. |
-| Part 3 appraisal study | In progress | All-seed paired packet construction and analysis are prepared; CPU preflight and GPU appraisal inference remain pending. |
+| Part | Question | Design | Status |
+|---|---|---|---|
+| 1. Validate | Does the model reproduce the observed interaction ecology? | Empirical comparison and negative controls across `100` runs | Completed and frozen |
+| 2. Intervene | What changes when spatial design features change? | Four spatial conditions, two operating scenarios, `800` paired runs, and a four-factor sensitivity screen | Completed and frozen |
+| 3. Interpret | Who takes up the new affordances, and how? | Five cognitive orientations balanced across role, condition, scenario, and assignment round in `400` closed-loop runs, followed by synthetic appraisals and a matched architecture ablation | Completed |
 
-Part 1 produced 22.14 simulated F2F interactions per hour against an empirical
-target of 22.78, with 100/100 workflow PASS and clean hard gates. Part 2
-completed 800/800 workflow-clean runs. The Part 3 closed-loop study completed
-400/400 runs with balanced persona exposure, isolated exogenous arrival
-streams, temporal and sampling coverage, and clean technical integrity gates.
+Part 1 produced `22.14` simulated face-to-face interactions per hour against an
+empirical target of `22.78`, with `100/100` workflow passes and clean hard
+gates. Part 2 completed `800/800` workflow-clean runs. Part 3 completed
+`400/400` runs with balanced orientation exposure, isolated exogenous arrival
+streams, temporal and sampling coverage, and clean technical-integrity gates.
 
-## Scientific Boundary
+## Model Boundary
 
-The rule-based ABM owns geometry, routing, workflow, patient flow, ESI logic,
-feasible partners, proximity, and interaction logging. Parts 1 and 2 never use
-an LLM. Part 3 is opt-in: Qwen may choose among ABM-supplied feasible
-discretionary interaction actions, but it cannot invent movement, patients,
-partners, or events. Synthetic appraisals are design probes, not staff
-testimony or psychometric measurements.
+The rule-based ABM owns geometry, routing, workflow, patient flow, acuity,
+feasible partners, proximity, mutual visibility, and event logging. Parts 1
+and 2 never use an LLM. Part 3 is opt-in: Qwen may choose among feasible
+discretionary interaction actions supplied by the ABM, but it cannot invent
+movement, patients, partners, or events.
 
-## Repository Layout
+The five Part 3 personas are preregistered synthetic workplace orientations,
+not discovered or validated personality types. Their OCEAN profiles are
+illustrative display labels and are never causal model inputs. Synthetic
+appraisals are design probes, not testimony from Zurich ED staff.
+
+## Repository Map
 
 ```text
-src/          model, agents, geometry, interaction, and Part 3 policy code
-scripts/      reproducible run, verification, analysis, and figure entrypoints
-jobs/         Snellius batch definitions
-manifests/    active paired experiment manifests and source lock
+src/          model, geometry, interaction, metrics, and Part 3 policy code
+scripts/
+  run/        simulation and inference entry points
+  validation/ preflight and result-verification commands
+  analysis/   scientific post-processing
+  build/      manifests, packets, figures, tables, and web-data builders
+jobs/         final Snellius batch definitions retained for reproducibility
+manifests/    paired experiment manifests and source-integrity lock
 data/         non-participant geometry inputs
-docs/         architecture, protocols, study plans, and literature map
+docs/         architecture, protocols, analysis plans, and literature map
 outputs/
-  findings/  publication-ready aggregate figures and tables
+  findings/   publication-ready aggregate figures, tables, and reports
+web/
+  persona-explorer/  interactive Part 3 results interface
 ```
 
-Raw participant-linked data, imported n100 run trees, model caches, cluster
-logs, archives, and generated Part 3 traces are intentionally excluded from
-version control.
+Participant-linked data, imported run trees, model caches, cluster logs,
+archives, and generated traces are intentionally excluded from version
+control.
 
 ## Installation
 
-Parts 1 and 2 use a CPU environment:
+Parts 1 and 2 use the CPU environment:
 
 ```bash
 python3 -m venv .venv
@@ -58,7 +68,7 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-The vLLM backend must be installed in a separate GPU environment:
+The Part 3 vLLM backend requires a separate GPU environment:
 
 ```bash
 python3 -m venv vllm-env
@@ -66,47 +76,71 @@ source vllm-env/bin/activate
 python3 -m pip install -r requirements-llm.txt
 ```
 
-See [Part 3 LLM backend setup](docs/PART3_LLM_BACKEND_SETUP.md) for the
-Snellius workflow. Do not mix the two environments.
+See the [Part 3 backend setup](docs/PART3_LLM_BACKEND_SETUP.md) for the
+reproducible Snellius workflow. The CPU and vLLM environments should not be
+mixed.
 
 ## Verification
 
-Syntax and batch-file checks do not require research data:
+Repository-level checks do not require restricted research data:
 
 ```bash
-python3 -m py_compile config.py main.py src/*.py scripts/*.py
+python3 -m py_compile \
+  config.py main.py src/*.py scripts/*/*.py tests/*.py
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 find jobs -maxdepth 1 -name '*.sbatch' -print -exec bash -n {} \;
+shasum -a 256 -c manifests/part3_current_source.sha256
 ```
 
-The full model verification command requires the restricted empirical
-shadowing source at the path documented in `config.py`:
+Result-level verification commands live in `scripts/validation/` and require
+the corresponding restricted source data or completed run tree. The completed
+Part 1, Part 2, and Part 3 batches should not be rerun for ordinary
+development.
 
-```bash
-python3 main.py --verify
-```
+## Results
 
-Completed n100 batches should not be rerun for ordinary development.
-
-## Results and Documentation
-
+- [Study overview and interaction pipeline](outputs/findings/study_overview/)
 - [Part 1 validation report](outputs/findings/part1_validation_n100/part1_validation_n100_report.md)
-- [Part 2 intervention figures and tables](outputs/findings/part2_spatial_interventions_n100/)
-- [Part 2 sensitivity figures and tables](outputs/findings/part2_parameter_sensitivity_n20/)
+- [Part 2 intervention findings](outputs/findings/part2_spatial_interventions_n100/)
+- [Part 2 sensitivity findings](outputs/findings/part2_parameter_sensitivity_n20/)
+- [Part 3 cognitive-orientation findings](outputs/findings/part3_cognitive_personas_n10/)
+- [Interactive persona explorer](web/persona-explorer/)
+
+Figures are retained as publication-ready PDF and review-friendly PNG files.
+Tables are retained as LaTeX for the manuscript, CSV for analysis, and
+Markdown for repository review.
+
+## Documentation
+
 - [Architecture](docs/ARCHITECTURE.md)
-- [Experiment status](docs/EXPERIMENT_PLAN.md)
+- [Project and experiment status](docs/EXPERIMENT_PLAN.md)
+- [Part 2 intervention protocol](docs/PART2_SPATIAL_INTERVENTIONS_PROTOCOL.md)
 - [Part 3 protocol](docs/PART3_PLAN.md)
-- [Literature map](docs/LITERATURE_REFERENCE_MAP.md)
+- [Part 3 appraisal analysis plan](docs/PART3_APPRAISAL_ANALYSIS_PROTOCOL.md)
+- [Paper figure and table strategy](docs/PAPER_FIGURE_TABLE_STRATEGY.md)
+- [Literature reference map](docs/LITERATURE_REFERENCE_MAP.md)
 
 ## Data Availability
 
-The repository contains geometry inputs and aggregate reported findings. The
+This repository contains software, non-participant geometry inputs, aggregate
+reported findings, and the interactive results interface. The
 participant-linked shadowing source and full run-level outputs are not public
-repository assets. A deidentified archival data package and software citation
-will be prepared with the final paper release.
+repository assets. A deidentified archival data package and formal software
+citation will be prepared with the manuscript release.
 
 ## Interpretation Limits
 
-Do not infer clinical outcomes, universal ED design recommendations, human
-experience, validated personality types, or transfer to other layouts without
-recalibration. The Part 3 personas are preregistered synthetic workplace
-orientations; their OCEAN display is illustrative and never a causal input.
+The results do not establish clinical outcomes, a universally optimal ED
+layout, real staff experience, validated personality types, or transfer to
+other sites without recalibration. Part 3 estimates responses within this
+model and its prespecified synthetic orientations.
+
+## Citation
+
+The manuscript is in preparation. Until a formal citation is available, cite
+this repository by its title, author, URL, and archived release or commit.
+
+## License
+
+The software is released under the [MIT License](LICENSE). Data and third-party
+assets remain subject to their original access and licensing terms.

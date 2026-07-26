@@ -1,11 +1,9 @@
-"""Simulation orchestration for the Phase 1 ED ABM."""
+"""Simulation orchestration for the validated ED agent-based model."""
 
 from __future__ import annotations
 
 import math
-import os
 import random
-import json
 import hashlib
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -14,15 +12,6 @@ from typing import Dict, Iterable, List, Mapping, Optional
 
 import config
 
-config.OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-config.MPL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-os.environ.setdefault("MPLCONFIGDIR", str(config.MPL_CONFIG_DIR))
-
-import matplotlib
-
-if not (config.ANIMATION_MODE and not config.SAVE_ANIMATION):
-    matplotlib.use(config.MATPLOTLIB_BACKEND)
-import matplotlib.pyplot as plt
 from src.analysis import compute_kde_grid
 from src.agents import CoordinationNurse, Doctor, Nurse, Patient, StaffAgent
 from src.conditions import ConditionManager, get_condition_spec
@@ -71,17 +60,12 @@ class StaffInteractionIntent:
 
 
 class Simulation:
-    """Owns environment, agents, interaction logging, and visualization."""
+    """Owns the ED environment, agents, workflow, and scientific event logs."""
 
     def __init__(
         self,
         random_seed: Optional[int] = None,
         condition_name: Optional[str] = None,
-        interaction_backend: Optional[str] = None,
-        persona_source: Optional[str] = None,
-        model_variant: Optional[str] = None,
-        scope_mode: Optional[str] = None,
-        enable_senior_doctor_oversight: Optional[bool] = None,
         scenario_mode: Optional[str] = None,
         scenario_start_hour: Optional[int] = None,
         part3_episode_logging_enabled: Optional[bool] = None,
@@ -101,24 +85,15 @@ class Simulation:
             if scenario_start_hour is None
             else int(scenario_start_hour)
         ) % 24
-        self.scope_mode = config.DEFAULT_SCOPE_MODE
-        self.enable_senior_doctor_oversight = (
-            bool(config.ENABLE_SENIOR_DOCTOR_OVERSIGHT)
-            if enable_senior_doctor_oversight is None
-            else bool(enable_senior_doctor_oversight)
-        )
-        self.model_variant = config.MODEL_VARIANT if model_variant is None else model_variant
-        if self.model_variant not in config.MODEL_VARIANTS and self.model_variant not in config.POSTHOC_ANALYSIS_MODES:
-            raise ValueError(f"Unsupported model_variant: {self.model_variant}")
+        self.model_variant = config.BASELINE_MODEL_ID
         self.environment = Environment(
             wall_path=config.WALL_POSITIONS_PATH,
             zone_path=config.ZONE_BOUNDARIES_PATH,
         )
         self.condition_spec = get_condition_spec(config.CONDITION_NAME if condition_name is None else condition_name)
-        self.active_care_area_objects = []
-        self.condition_manager = ConditionManager(self.environment, self.condition_spec, self.active_care_area_objects)
+        self.condition_manager = ConditionManager(self.environment, self.condition_spec)
         self.perception = PerceptionService(self.condition_manager)
-        self.persona_source = config.PERSONA_SOURCE if persona_source is None else persona_source
+        self.persona_source = config.PERSONA_SOURCE
         self.part3_episode_logging_enabled = (
             bool(config.PART3_EPISODE_LOGGING_ENABLED)
             if part3_episode_logging_enabled is None
@@ -163,27 +138,17 @@ class Simulation:
             # Preserve the validated Part 1/2 random-number lifecycle exactly.
             self.part3_exogenous_arrival_stream_seed = None
             self.arrival_random = self.random
-        self.interaction_backend_name = (
-            config.INTERACTION_BACKEND if interaction_backend is None else interaction_backend
-        )
-        if self.model_variant in {config.BASELINE_MODEL_ID, "traditional_rule", "perception_rule", "memory_rule"}:
-            self.interaction_backend_name = "rule_stub"
+        self.interaction_backend_name = "rule_stub"
         self.routing_waypoints = (
             self.condition_manager.adjusted_routing_waypoints()
             if hasattr(self.condition_manager, "adjusted_routing_waypoints")
             else dict(self.environment.routing_waypoints)
         )
 
-        config.OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-
         self.timestep = 0
-        self.variant_settings = self._variant_settings(self.model_variant)
-        self.interaction_probability_multiplier = 1.0
         self.interaction_engine = InteractionEngine(
-            self.interaction_backend_name,
             self.random,
             model_variant=self.model_variant,
-            memory_enabled=self.variant_settings["memory_enabled"],
         )
         self.next_patient_id = config.PATIENT_ID_START
         self.communicative_interaction_log: List[Dict[str, object]] = []
@@ -213,13 +178,10 @@ class Simulation:
         self.reserved_doctor_ids_this_step: set[int] = set()
         self.last_opportunistic_corridor_interaction_by_pair: Dict[tuple[int, int], int] = {}
         self.last_opportunistic_station_interaction_by_pair: Dict[tuple[int, int], int] = {}
-        self.last_coordination_hub_interaction_by_pair: Dict[tuple[int, int], int] = {}
-        self.last_doctor_coreview_by_pair: Dict[tuple[int, int], int] = {}
         self.last_task_transition_update_by_pair: Dict[tuple[int, int], int] = {}
         self.logged_task_transition_update_episode_keys: set[tuple[object, ...]] = set()
         self.last_bedside_cotask_interaction_by_pair_patient: Dict[tuple[int, int, int], int] = {}
         self.bedside_cotask_logged_keys: set[tuple[int, int, int, str]] = set()
-        self.last_senior_doctor_review_by_pair: Dict[tuple[int, int], int] = {}
         self.last_perceived_staff_interaction_by_pair: Dict[tuple[int, int], int] = {}
         self.pending_staff_interaction_intents: Dict[str, StaffInteractionIntent] = {}
         self.completed_staff_interaction_intents: List[StaffInteractionIntent] = []
@@ -228,7 +190,6 @@ class Simulation:
         self.perception_checked_interaction_count = 0
         self.interactions_logged_without_perception_check = 0
         self.pending_task_transition_updates: List[Dict[str, object]] = []
-        self.pending_senior_doctor_reviews: List[Dict[str, object]] = []
         self.perception_event_examples: List[Dict[str, object]] = []
         self.currently_interacting_pairs: set[tuple[int, int]] = set()
         self.next_station_episode_index = 1
@@ -307,16 +268,6 @@ class Simulation:
             self.last_cluster_by_agent[agent.gid] = self.location_cluster(agent.position)
         self._seed_initial_patients()
 
-    def _variant_settings(self, model_variant: str) -> dict:
-        return {
-            "perception_required": True,
-            "memory_enabled": model_variant in {"memory_rule", "generative_interaction", "generative_interview"},
-            "generative_enabled": model_variant in {"generative_interaction", "generative_interview"},
-            "interviews_enabled": model_variant in config.POSTHOC_ANALYSIS_MODES,
-            "included_in_behavioral_ablation": model_variant in config.MODEL_VARIANTS,
-            "simulation_metrics_should_match_generative_interaction": model_variant in config.POSTHOC_ANALYSIS_MODES,
-        }
-
     def _scenario_hour_index(self) -> int:
         elapsed_hours = int(self.timestep // 3600)
         return int((self.scenario_start_hour + elapsed_hours) % 24)
@@ -368,27 +319,15 @@ class Simulation:
             return {int(level): float(weight) for level, weight in weights.items()}
         return config.ESI_ARRIVAL_WEIGHTS
 
-    def active_care_area_object_ids(self) -> set[str]:
-        return set()
-
     def station_interaction_zone_ids(self) -> set[str]:
         return set(config.STATION_ZONE_IDS)
 
-    def station_dwell_zone_ids(self, role: Optional[str] = None) -> set[str]:
-        dwell_ids = set(config.STATION_ZONE_IDS)
-        for item in self.active_care_area_objects:
-            if not bool(item.get("supports_dwell", False)):
-                continue
-            if role is not None and role not in set(item.get("allowed_roles", [])):
-                continue
-            dwell_ids.add(str(item["id"]))
-        return dwell_ids
+    def station_dwell_zone_ids(self) -> set[str]:
+        return set(config.STATION_ZONE_IDS)
 
     def corridor_or_threshold_interaction_zone_ids(self) -> set[str]:
         return {zone_id for zone_id in self.condition_manager.zone_polygons if str(zone_id).startswith("CORR")}
 
-    def care_area_registry(self) -> List[dict]:
-        return []
 
     def scope_roster(self) -> Mapping[str, object]:
         return {
@@ -405,7 +344,7 @@ class Simulation:
 
     def staff_access_position_for_patient(self, patient: Patient) -> tuple[float, float]:
         if patient.bed_index is not None:
-            access_positions = getattr(config, "BED_ACCESS_POSITIONS", config.BED_POSITIONS)
+            access_positions = config.BED_ACCESS_POSITIONS
             if patient.bed_index < len(access_positions):
                 return tuple(access_positions[patient.bed_index])
         return tuple(patient.bed_position or patient.position)
@@ -456,10 +395,8 @@ class Simulation:
 
     def _assign_staff_personas(self) -> None:
         for agent in self.staff_agents:
-            persona = persona_for_staff(agent.gid, agent.role, source=self.persona_source)
+            persona = persona_for_staff(agent.gid, agent.role)
             agent.name = persona.name
-            if getattr(agent, "senior_oversight_only", False):
-                agent.name = f"Senior Doctor {agent.gid}"
             agent.persona = persona
             agent.persona_source_trace = persona.source
             agent.memory_stream = self.interaction_engine.stream_for(agent.gid)
@@ -624,7 +561,7 @@ class Simulation:
         else:
             home_position = self._zone_centroid(home_zone_id)
             start_center = None
-        doctors = [
+        return [
             Doctor(
                 gid=20 + doctor_index,
                 position=self._sample_start_position(
@@ -637,21 +574,6 @@ class Simulation:
             )
             for doctor_index in range(int(self.staff_counts().get("Doctor", config.STAFF_COUNTS["Doctor"])))
         ]
-        if self.enable_senior_doctor_oversight:
-            senior_home_zone_id = config.SENIOR_DOCTOR_HOME_ZONE_ID
-            senior_home_position = self._zone_centroid(senior_home_zone_id)
-            senior_doctor = Doctor(
-                gid=config.SENIOR_DOCTOR_GID,
-                position=self._sample_start_position(
-                    senior_home_zone_id,
-                    config.STAFF_IDLE_POSITION_NOISE_METERS,
-                ),
-                home_position=senior_home_position,
-                home_zone_id=senior_home_zone_id,
-            )
-            senior_doctor.senior_oversight_only = True
-            doctors.append(senior_doctor)
-        return doctors
 
     def _sample_patient_profile(self, force_high_acuity: bool = False) -> dict:
         if force_high_acuity:
@@ -701,24 +623,6 @@ class Simulation:
                 notes="Initial patient seeded after upstream admin/triage.",
             )
 
-    def force_high_acuity_patient(self) -> Patient:
-        """Inject one upstream-triaged ESI 1/2 patient for high-acuity smoke checks."""
-
-        patient = self._create_patient(force_high_acuity=True)
-        self.next_patient_id += 1
-        self.active_patients.append(patient)
-        self.patient_by_id[patient.gid] = patient
-        self.log_workflow_event(
-            agent=None,
-            patient=patient,
-            event_type="patient_arrival",
-            task_name=patient.current_task_name,
-            old_state=None,
-            new_state="waiting_for_placement",
-            position=patient.position,
-            notes="Forced high-acuity smoke patient entered after upstream triage.",
-        )
-        return patient
 
     @property
     def all_agents(self) -> List[object]:
@@ -822,7 +726,7 @@ class Simulation:
         }
 
         bed_count = len(self.patient_care_positions())
-        reserved_beds = set(getattr(config, "HIGH_ACUITY_RESERVED_BED_INDICES", set()))
+        reserved_beds = set(config.HIGH_ACUITY_RESERVED_BED_INDICES)
         if patient is not None and getattr(patient, "esi_level", 5) in {1, 2}:
             for bed_index in sorted(reserved_beds):
                 if bed_index < bed_count and bed_index not in occupied_bed_indices:
@@ -886,7 +790,6 @@ class Simulation:
         for doctor in self.doctors:
             if (
                 doctor.is_available()
-                and not getattr(doctor, "senior_oversight_only", False)
                 and doctor.handoff_patient_id is None
                 and doctor.gid not in self.reserved_doctor_ids_this_step
             ):
@@ -984,7 +887,7 @@ class Simulation:
         return len(occupied_beds) + len(waiting_patients)
 
     def ordinary_bed_indices(self) -> set[int]:
-        reserved = set(getattr(config, "HIGH_ACUITY_RESERVED_BED_INDICES", set()))
+        reserved = set(config.HIGH_ACUITY_RESERVED_BED_INDICES)
         return {index for index in range(len(self.patient_care_positions())) if index not in reserved}
 
     @staticmethod
@@ -1092,8 +995,6 @@ class Simulation:
         return candidates
 
     def _clinically_preemptible_by_high_acuity(self, agent, patient: Patient) -> tuple[str, str]:
-        if getattr(agent, "senior_oversight_only", False):
-            return "not_preemptible", "senior_doctor_unchanged"
         if agent.role not in {"Nurse", "Doctor"}:
             return "not_preemptible", "role_not_targeted"
         if patient.task_index not in config.ROLE_PERMISSIONS.get(agent.role, []):
@@ -1125,7 +1026,7 @@ class Simulation:
         return "not_preemptible", f"mode_{getattr(agent, 'mode', 'unknown')}"
 
     def _apply_high_acuity_soft_preemptions(self) -> None:
-        if not bool(getattr(config, "HIGH_ACUITY_SOFT_PREEMPTION_ENABLED", True)):
+        if not config.HIGH_ACUITY_SOFT_PREEMPTION_ENABLED:
             return
         if self.scenario_mode != "high_load_high_acuity":
             return
@@ -1147,7 +1048,6 @@ class Simulation:
                 candidates = [
                     agent for agent in self.staff_agents
                     if getattr(agent, "role", None) == role
-                    and not getattr(agent, "senior_oversight_only", False)
                 ]
                 soft_candidates = []
                 saw_conditional = False
@@ -1242,63 +1142,11 @@ class Simulation:
         self._log_opportunistic_corridor_interactions()
         self._log_bedside_cotask_interactions()
         self._log_task_transition_updates()
-        self._log_senior_doctor_oversight_interactions()
         self._finalize_completed_tasks()
         self.timestep += config.TIMESTEP_SECONDS
         if self.timestep % config.PATIENT_STATE_SWEEP_INTERVAL_SECONDS == 0:
             self._repair_state_inconsistencies()
 
-    def diagnose_agent_states(self, after_seconds: int = 300) -> dict:
-        """Run a short diagnostic window and report state progression per agent."""
-
-        tracked_agents = list(self.staff_agents)
-        tracked_agent_ids = [agent.gid for agent in tracked_agents]
-        mode_transitions = {agent_id: 0 for agent_id in tracked_agent_ids}
-        previous_modes = {agent.gid: getattr(agent, "mode", "unknown") for agent in tracked_agents}
-        previous_positions = {agent.gid: agent.position for agent in tracked_agents}
-        total_distance = {agent_id: 0.0 for agent_id in tracked_agent_ids}
-        max_stalled = {agent_id: 0 for agent_id in tracked_agent_ids}
-
-        steps = max(int(after_seconds / config.TIMESTEP_SECONDS), 0)
-        for _ in range(steps):
-            self.step()
-            for agent in tracked_agents:
-                total_distance[agent.gid] += math.dist(previous_positions[agent.gid], agent.position)
-                if agent.mode != previous_modes[agent.gid]:
-                    mode_transitions[agent.gid] += 1
-                    previous_modes[agent.gid] = agent.mode
-                previous_positions[agent.gid] = agent.position
-                max_stalled[agent.gid] = max(max_stalled[agent.gid], int(getattr(agent, "stalled_seconds", 0)))
-
-        diagnostic = {
-            "timestep": self.timestep,
-            "after_seconds": after_seconds,
-            "agents": [],
-        }
-        for agent in tracked_agents:
-            agent_payload = {
-                "gid": agent.gid,
-                "role": agent.role,
-                "mode": getattr(agent, "mode", "unknown"),
-                "current_task": getattr(agent, "current_task_name", None),
-                "target_patient_id": getattr(agent, "target_patient_id", None),
-                "position": [round(agent.position[0], 3), round(agent.position[1], 3)],
-                "total_distance_moved": round(total_distance[agent.gid], 3),
-                "mode_transitions": mode_transitions[agent.gid],
-                "current_stalled_seconds": int(getattr(agent, "stalled_seconds", 0)),
-                "max_stalled_seconds": max_stalled[agent.gid],
-            }
-            diagnostic["agents"].append(agent_payload)
-            print(
-                f"{agent.role} {agent.gid}: mode={agent_payload['mode']} "
-                f"task={agent_payload['current_task']} "
-                f"pos=({agent_payload['position'][0]:.3f}, {agent_payload['position'][1]:.3f}) "
-                f"distance={agent_payload['total_distance_moved']:.3f}m "
-                f"transitions={agent_payload['mode_transitions']} "
-                f"stalled={agent_payload['current_stalled_seconds']}s "
-                f"max_stalled={agent_payload['max_stalled_seconds']}s"
-            )
-        return diagnostic
 
     def _update_interaction_pairs(self) -> None:
         for left_index, left_agent in enumerate(self.staff_agents):
@@ -1439,21 +1287,7 @@ class Simulation:
                 region = "region_1" if heading > 0.0 else "region_2"
                 self.ablation_diagnostics[f"cocpit_idle_{region}_occupancy_count"] += 1
 
-    def _encounter_visible(self, left_agent, right_agent) -> bool:
-        return self._perception_gate(
-            left_agent,
-            right_agent,
-            interaction_type="generic",
-        )["accepted"]
 
-    def _classify_perception_rejection(self, left_agent, right_agent) -> str:
-        if not self.variant_settings["perception_required"]:
-            return "none"
-        if not self.perception._within_fov(left_agent, right_agent.position) or not self.perception._within_fov(right_agent, left_agent.position):
-            return "rejected_fov_hard"
-        if not self.perception._has_visibility(left_agent.position, right_agent.position):
-            return "rejected_by_visibility"
-        return "rejected_by_attention_capacity"
 
     def _shared_station_context(self, left_agent, right_agent, position: Optional[tuple[float, float]] = None) -> bool:
         midpoint = position or (
@@ -1501,7 +1335,7 @@ class Simulation:
     ) -> dict:
         """Universal perception gate for every validation-counted F2F event."""
 
-        if not self.variant_settings["perception_required"]:
+        if not config.PERCEPTION_BASED_BASELINE_ENABLED:
             return {"accepted": False, "category": "interactions_logged_without_perception_check", "reason": "perception_disabled"}
 
         distance = left_agent.distance_to_agent(right_agent)
@@ -1667,7 +1501,7 @@ class Simulation:
         task_name = getattr(staff_agent, "current_task_name", None)
         if not task_name:
             return
-        role_probabilities = getattr(config, "PATIENT_FACING_IN_TASK_INTERACTION_PROBABILITY", {}).get(
+        role_probabilities = config.PATIENT_FACING_IN_TASK_INTERACTION_PROBABILITY.get(
             getattr(staff_agent, "role", ""), {}
         )
         probability = float(role_probabilities.get(task_name, 0.0))
@@ -1801,8 +1635,7 @@ class Simulation:
             1.0,
             base_probability
             * pair_weight
-            * zone_weight
-            * getattr(self, "interaction_probability_multiplier", 1.0),
+            * zone_weight,
         )
 
     def _finalize_completed_tasks(self) -> None:
@@ -1834,7 +1667,6 @@ class Simulation:
             )
             self._schedule_task_transition_update(staff_member, patient, old_state)
             self._maybe_start_intertask_coordination_gap(patient, old_state)
-            self._schedule_senior_doctor_review(staff_member, patient, old_state)
             if (
                 isinstance(staff_member, CoordinationNurse)
                 and old_state == config.PLACEMENT_TASK_NAME
@@ -1873,7 +1705,7 @@ class Simulation:
 
     def _nearest_post_task_station(self, origin: tuple[float, float]) -> Optional[tuple[str, tuple[float, float]]]:
         candidates: list[tuple[float, str, tuple[float, float]]] = []
-        for zone_id in getattr(config, "POST_TASK_STATION_CHECK_STATIONS", ("COCPIT", "NURSTA", "NUROPE")):
+        for zone_id in config.POST_TASK_STATION_CHECK_STATIONS:
             try:
                 point = self.condition_manager.station_attractor(str(zone_id))
             except Exception:
@@ -1887,7 +1719,7 @@ class Simulation:
         return zone_id, point
 
     def _maybe_start_post_task_station_check(self, staff_member: StaffAgent, patient: Patient, completed_task_name: Optional[str]) -> bool:
-        if not bool(getattr(config, "POST_TASK_STATION_CHECK_ENABLED", False)):
+        if not config.POST_TASK_STATION_CHECK_ENABLED:
             return False
         if not isinstance(staff_member, (Doctor, Nurse)):
             return False
@@ -2030,165 +1862,14 @@ class Simulation:
             getattr(partner, "role", None),
         )
 
-    def _schedule_senior_doctor_review(self, staff_member, patient, task_name: str) -> None:
-        if not self.enable_senior_doctor_oversight:
-            return
-        if not isinstance(staff_member, Doctor) or getattr(staff_member, "senior_oversight_only", False):
-            return
-        if patient.discharged:
-            return
-        if not self._senior_review_eligible(patient, task_name):
-            return
-        max_reviews = (
-            config.SENIOR_DOCTOR_MAX_COMPLEX_REVIEWS_PER_PATIENT
-            if self._senior_review_complex_case(patient, task_name)
-            else config.SENIOR_DOCTOR_MAX_REVIEWS_PER_PATIENT
-        )
-        if getattr(patient, "senior_doctor_review_count", 0) >= max_reviews:
-            return
-        probability = float(config.SENIOR_DOCTOR_REVIEW_PROBABILITY.get(task_name, 0.0))
-        if probability <= 0.0:
-            return
-        if getattr(patient, "esi_level", 5) in {1, 2}:
-            probability = min(1.0, probability + 0.08)
-        if self.random.random() >= probability:
-            return
-        review_zone = self._senior_review_zone(patient, task_name)
-        hold_low, hold_high = config.SENIOR_DOCTOR_REVIEW_HOLD_SECONDS
-        hold_seconds = self.random.randint(int(hold_low), int(hold_high))
-        patient.coordination_hold_until = max(patient.coordination_hold_until, self.timestep + hold_seconds)
-        patient.coordination_hold_after_task = task_name
-        patient.coordination_hold_reason = "awaiting_senior_review"
-        patient.senior_doctor_review_count += 1
-        self.pending_senior_doctor_reviews.append(
-            {
-                "initiator_id": staff_member.gid,
-                "patient_id": patient.gid,
-                "task_name": task_name,
-                "review_zone": review_zone,
-                "esi_level": getattr(patient, "esi_level", None),
-                "created_at": self.timestep,
-                "expires_at": self.timestep + config.SENIOR_DOCTOR_REVIEW_EXPIRY_SECONDS,
-            }
-        )
-        self.log_workflow_event(
-            agent=staff_member,
-            patient=patient,
-            event_type="senior_review_gap_started",
-            task_name=patient.current_task_name,
-            old_state=task_name,
-            new_state=patient.current_task_name,
-            position=patient.position,
-            notes=(
-                f"Patient {patient.gid} waits up to {hold_seconds}s for SeniorDoctor "
-                f"review after {task_name}."
-            ),
-        )
-
-    def _senior_review_complex_case(self, patient: Patient, task_name: str) -> bool:
-        esi_level = getattr(patient, "esi_level", 5)
-        return (
-            esi_level in {1, 2}
-            or (
-                esi_level == 3
-                and task_name in {
-                    config.DIAGNOSTICS_TASK_NAME,
-                    config.REASSESSMENT_TASK_NAME,
-                    config.DISPOSITION_DECISION_TASK_NAME,
-                }
-            )
-        )
-
-    def _senior_review_eligible(self, patient: Patient, task_name: str) -> bool:
-        esi_level = getattr(patient, "esi_level", 5)
-        if esi_level in {1, 2} and task_name in {
-            config.MEDICAL_EVALUATION_TASK_NAME,
-            config.DIAGNOSTICS_TASK_NAME,
-            config.REASSESSMENT_TASK_NAME,
-            config.DISPOSITION_DECISION_TASK_NAME,
-        }:
-            return True
-        if esi_level == 3 and task_name in {
-            config.DIAGNOSTICS_TASK_NAME,
-            config.REASSESSMENT_TASK_NAME,
-            config.DISPOSITION_DECISION_TASK_NAME,
-        }:
-            return True
-        return False
-
-    def _senior_review_zone(self, patient: Patient, task_name: str) -> str:
-        if (
-            getattr(patient, "esi_level", 5) in {1, 2}
-            and task_name in {config.DIAGNOSTICS_TASK_NAME, config.DISPOSITION_DECISION_TASK_NAME}
-            and self.random.random() < config.SENIOR_DOCTOR_OFFSPA_REVIEW_PROBABILITY
-        ):
-            return "OFFSPA"
-        return "COCPIT"
-
-    def maybe_log_senior_doctor_room_assist(self, staff_member, patient: Patient, task_name: str) -> None:
-        if not self.enable_senior_doctor_oversight:
-            return
-        if not isinstance(staff_member, Doctor) or getattr(staff_member, "senior_oversight_only", False):
-            return
-        if not self._senior_room_assist_eligible(patient, task_name):
-            return
-        if getattr(patient, "senior_doctor_room_assist_count", 0) >= 1:
-            return
-        probability = float(config.SENIOR_DOCTOR_ROOM_ASSIST_PROBABILITY.get(task_name, 0.0))
-        if probability <= 0.0 or self.random.random() >= probability:
-            return
-        senior_doctors = [
-            doctor for doctor in self.doctors
-            if getattr(doctor, "senior_oversight_only", False)
-            and not doctor.is_task_busy()
-        ]
-        if not senior_doctors:
-            return
-        senior_doctor = senior_doctors[0]
-        pair_key = tuple(sorted((staff_member.gid, senior_doctor.gid)))
-        last_timestamp = self.last_senior_doctor_review_by_pair.get(pair_key)
-        if (
-            last_timestamp is not None
-            and (self.timestep - last_timestamp) < config.SENIOR_DOCTOR_ROOM_ASSIST_COOLDOWN_SECONDS
-        ):
-            return
-        position = self._embodied_contact_position(staff_member, senior_doctor)
-        before_count = len(self.interaction_log)
-        self.log_interaction(
-            agent_1=staff_member,
-            agent_2=senior_doctor,
-            position=position,
-            interaction_type="senior_doctor_room_assist",
-            task_name=task_name,
-            reason_for_interaction="acuity_or_complexity_gated_senior_doctor_room_assist",
-        )
-        if len(self.interaction_log) > before_count:
-            self.currently_interacting_pairs.add(pair_key)
-            self.last_senior_doctor_review_by_pair[pair_key] = self.timestep
-            patient.senior_doctor_room_assist_count += 1
-
-    def _senior_room_assist_eligible(self, patient: Patient, task_name: str) -> bool:
-        esi_level = getattr(patient, "esi_level", 5)
-        if task_name not in config.SENIOR_DOCTOR_ROOM_ASSIST_PROBABILITY:
-            return False
-        if esi_level in {1, 2}:
-            return True
-        return esi_level == 3 and task_name in {
-            config.DIAGNOSTICS_TASK_NAME,
-            config.TREATMENT_TASK_NAME,
-            config.REASSESSMENT_TASK_NAME,
-            config.DISPOSITION_DECISION_TASK_NAME,
-        }
-
     def _doctor_assigned_to_patient(self, patient: Patient) -> bool:
         if patient.claiming_staff_id in self.doctor_by_id:
             doctor = self.doctor_by_id[patient.claiming_staff_id]
-            if not getattr(doctor, "senior_oversight_only", False) and doctor.target_patient_id == patient.gid:
+            if doctor.target_patient_id == patient.gid:
                 return True
 
         return any(
-            not getattr(doctor, "senior_oversight_only", False)
-            and (doctor.target_patient_id == patient.gid or doctor.handoff_patient_id == patient.gid)
+            doctor.target_patient_id == patient.gid or doctor.handoff_patient_id == patient.gid
             for doctor in self.doctors
         )
 
@@ -2260,10 +1941,7 @@ class Simulation:
         }
 
     def _doctor_utilization_summary(self) -> Dict[str, float]:
-        ordinary_doctor_ids = [
-            doctor.gid for doctor in self.doctors
-            if not getattr(doctor, "senior_oversight_only", False)
-        ]
+        doctor_ids = [doctor.gid for doctor in self.doctors]
         total_seconds = 0
         task_seconds = 0
         walking_seconds = 0
@@ -2278,7 +1956,7 @@ class Simulation:
             "awaiting_nurse",
         }
         available_modes = {"idle", "returning_home", "patrolling", "post_task_station_check"}
-        for doctor_id in ordinary_doctor_ids:
+        for doctor_id in doctor_ids:
             counter = self.mode_dwell_by_agent.get(doctor_id, Counter())
             total_seconds += sum(counter.values())
             task_seconds += counter.get("performing_task", 0)
@@ -2658,7 +2336,7 @@ class Simulation:
         if not bool(gate_result.get("perception_checked", False)):
             self.interactions_logged_without_perception_check += 1
             self.ablation_diagnostics["interactions_logged_without_perception_check"] += 1
-        if self.variant_settings["perception_required"]:
+        if config.PERCEPTION_BASED_BASELINE_ENABLED:
             if not gate_result["accepted"]:
                 self.ablation_diagnostics[str(gate_result["category"])] += 1
                 self.log_missed_opportunity(
@@ -2814,7 +2492,7 @@ class Simulation:
             "logged_coordinate_is_actual_contact": True,
             "synthetic_or_relocated_coordinate": False,
             "midpoint_logged_validation_interaction": False,
-            "perception_required": bool(self.variant_settings["perception_required"]),
+            "perception_required": bool(config.PERCEPTION_BASED_BASELINE_ENABLED),
             "final_nonproximate_staff_interaction": nonproximate_staff,
             "close_proximity_staff_interaction": close_proximity_staff,
             "initiation_distance_m": initiation_distance,
@@ -2846,33 +2524,41 @@ class Simulation:
                 "gate_category": gate_result.get("category"),
                 "salience_score": gate_result.get("salience_score"),
             },
-            "memory_context_ids": decision.retrieved_memory_ids or [],
-            "memory_context_summaries": decision.retrieved_memory_summaries or [],
+            "memory_context_ids": [],
+            "memory_context_summaries": [],
             "backend_name": decision.backend_name or self.interaction_backend_name,
             "raw_llm_response": decision.raw_response,
             "parsed_structured_response": decision.parsed_response,
-            "used_fallback": decision.used_fallback,
-            "fallback": decision.used_fallback,
+            "used_fallback": False,
+            "fallback": False,
             "backend_used": decision.backend_name or self.interaction_backend_name,
-            "memory_effect_applied": decision.memory_effect_applied,
-            "memory_effect_type": decision.memory_effect_type,
-            "memory_ids_used": decision.memory_ids_used or [],
-            "probability_before": decision.probability_before,
-            "probability_after": decision.probability_after,
-            "duration_before": decision.duration_before,
-            "duration_after": decision.duration_after,
-            "accepted_because_of_memory": decision.accepted_because_of_memory,
-            "rejected_because_of_memory": decision.rejected_because_of_memory,
-            "decision_flipped_by_memory": decision.decision_flipped_by_memory,
-            "topic_before": decision.topic_before,
-            "topic_after": decision.topic_after,
-            "prompt_context_hash": decision.prompt_context_hash,
-            "context_summary": decision.context_summary,
+            "memory_effect_applied": False,
+            "memory_effect_type": "",
+            "memory_ids_used": [],
+            "probability_before": (
+                decision.parsed_response.get("interact_probability")
+                if decision.parsed_response
+                else None
+            ),
+            "probability_after": (
+                decision.parsed_response.get("interact_probability")
+                if decision.parsed_response
+                else None
+            ),
+            "duration_before": decision.duration_seconds,
+            "duration_after": decision.duration_seconds,
+            "accepted_because_of_memory": False,
+            "rejected_because_of_memory": False,
+            "decision_flipped_by_memory": False,
+            "topic_before": decision.topic,
+            "topic_after": decision.topic,
+            "prompt_context_hash": None,
+            "context_summary": None,
             "persona_id": decision.persona_id,
             "was_visible_before_interaction": visible_before_interaction,
             "isovist_area_at_initiation": self._polygon_area(isovist_polygon),
             "approach_distance_meters": math.dist(agent_1.position, agent_2.position),
-            "trace_support_ids": decision.retrieved_memory_ids or [],
+            "trace_support_ids": [],
         }
         if gate_result.get("part3_decision_output_contract") == "categorical_causal_v1":
             event.update(
@@ -3053,7 +2739,6 @@ class Simulation:
                 "task_state": task_state,
             }
         self.missed_opportunity_log.append(event)
-        self.interaction_engine.remember_missed_opportunity(event, agent)
 
     def location_cluster(self, position: tuple[float, float]) -> str:
         zone_id = self.which_zone(*position)
@@ -3086,7 +2771,7 @@ class Simulation:
         self.bed_occupancy_samples.append(len(occupied_beds))
         pressure = self.ed_pressure_snapshot()
         ordinary_bed_indices = self.ordinary_bed_indices()
-        special_bed_indices = set(getattr(config, "HIGH_ACUITY_RESERVED_BED_INDICES", set()))
+        special_bed_indices = set(config.HIGH_ACUITY_RESERVED_BED_INDICES)
         active_esi1_count = sum(
             1 for patient in self.active_patients
             if not patient.discharged and int(getattr(patient, "esi_level", 5)) == 1
@@ -3172,142 +2857,10 @@ class Simulation:
                     agent_id
                 ] += config.TIMESTEP_SECONDS
 
-    def _log_coordination_hub_interactions(self) -> None:
-        station_modes = {
-            "idle",
-            "returning_home",
-            "waiting_for_doctor",
-            "using_secondary_station",
-            "moving_to_post_task_station_check",
-            "post_task_station_check",
-            "awaiting_nurse",
-            "patrolling",
-        }
-        coordinator = self.coordination_nurse
-        if coordinator.is_task_busy() or coordinator.mode not in station_modes:
-            return
-
-        coordinator_zone = self.which_zone(*coordinator.position)
-        hub_zones = self.station_interaction_zone_ids() | set(config.STATION_ADJACENT_ZONE_IDS)
-        if coordinator_zone not in hub_zones:
-            return
-
-        for partner in self.staff_agents:
-            if partner.gid == coordinator.gid:
-                continue
-            if getattr(partner, "senior_oversight_only", False):
-                continue
-            if partner.is_task_busy() or partner.mode not in station_modes:
-                continue
-            partner_zone = self.which_zone(*partner.position)
-            if partner_zone not in hub_zones:
-                continue
-            satellite_station_context = (
-                coordinator_zone in {"NURSTA", "NUROPE"}
-                or partner_zone in {"NURSTA", "NUROPE"}
-                or coordinator_zone in self.active_care_area_object_ids()
-                or partner_zone in self.active_care_area_object_ids()
-            )
-            if coordinator.mode in {"patrolling", "returning_home"} and not satellite_station_context:
-                continue
-            distance_threshold = (
-                config.SATELLITE_STATION_CHECKIN_DISTANCE_METERS
-                if satellite_station_context
-                else config.STATION_COORDINATION_DISTANCE_METERS
-            )
-            if coordinator.distance_to_agent(partner) > distance_threshold:
-                self.ablation_diagnostics["rejected_by_distance"] += 1
-                continue
-
-            midpoint = (
-                (coordinator.position[0] + partner.position[0]) / 2.0,
-                (coordinator.position[1] + partner.position[1]) / 2.0,
-            )
-            midpoint_zone = self.which_zone(*midpoint)
-            if midpoint_zone not in hub_zones:
-                midpoint = coordinator.position
-                midpoint_zone = coordinator_zone
-
-            self.ablation_diagnostics["eligible_encounters_considered"] += 1
-            gate_result = self._perception_gate(
-                coordinator,
-                partner,
-                interaction_type="opportunistic_station",
-                position=midpoint,
-            )
-            if not gate_result["accepted"]:
-                self.ablation_diagnostics[str(gate_result["category"])] += 1
-                self.log_missed_opportunity(
-                    agent=coordinator,
-                    partner=partner,
-                    reason="needed_partner_not_visible",
-                    position=midpoint,
-                    perception_state={
-                        "encounter": "coordination_hub",
-                        "gate_category": gate_result["category"],
-                        "gate_reason": gate_result["reason"],
-                    },
-                    task_state=coordinator.mode,
-                )
-                continue
-
-            pair_key = tuple(sorted((coordinator.gid, partner.gid)))
-            if pair_key in self.currently_interacting_pairs:
-                self.ablation_diagnostics["rejected_by_cooldown"] += 1
-                self.ablation_diagnostics["repeated_station_pair_suppressed_count"] += 1
-                continue
-            if self._station_same_dwell_repeat_suppressed(coordinator, partner, midpoint_zone):
-                continue
-            last_timestamp = self.last_coordination_hub_interaction_by_pair.get(pair_key)
-            if (
-                last_timestamp is not None
-                and (self.timestep - last_timestamp) < config.COORDINATION_HUB_INTERACTION_COOLDOWN_SECONDS
-            ):
-                self.ablation_diagnostics["rejected_by_cooldown"] += 1
-                self.ablation_diagnostics["station_same_pair_repeat_count"] += 1
-                self.ablation_diagnostics["repeated_station_pair_suppressed_count"] += 1
-                continue
-
-            if midpoint_zone in {"NURSTA", "NUROPE"} or midpoint_zone in self.active_care_area_object_ids() or satellite_station_context:
-                base_probability = max(
-                    config.COORDINATION_HUB_INTERACTION_PROBABILITY,
-                    config.SATELLITE_STATION_CHECKIN_PROBABILITY,
-                )
-                self.ablation_diagnostics["satellite_station_checkin_opportunities"] += 1
-            else:
-                base_probability = config.COORDINATION_HUB_INTERACTION_PROBABILITY
-
-            probability = self._hcw_hcw_interaction_probability(
-                coordinator,
-                partner,
-                midpoint_zone,
-                base_probability,
-            )
-            if self.random.random() >= probability:
-                self.ablation_diagnostics["rejected_by_probability_or_rule_decision"] += 1
-                continue
-
-            contact_position = self._embodied_contact_position(coordinator, partner)
-            before_count = len(self.interaction_log)
-            self.log_interaction(
-                agent_1=coordinator,
-                agent_2=partner,
-                position=contact_position,
-                interaction_type="opportunistic_station",
-                reason_for_interaction="coordination_hub_check",
-                perception_gate_result=gate_result,
-            )
-            if len(self.interaction_log) > before_count:
-                self.currently_interacting_pairs.add(pair_key)
-                self._mark_station_same_dwell_episode(coordinator, partner, midpoint_zone)
-                self.last_coordination_hub_interaction_by_pair[pair_key] = self.timestep
-                self.last_opportunistic_station_interaction_by_pair[pair_key] = self.timestep
 
     def _staff_externally_interruptible(self, agent) -> bool:
         """Return whether unrelated opportunistic perception can divert this staff member."""
 
-        if getattr(agent, "senior_oversight_only", False):
-            return False
         if agent.is_task_busy():
             self.ablation_diagnostics["externally_interruptible_rejections_count"] += 1
             return False
@@ -3346,8 +2899,6 @@ class Simulation:
     def _staff_locally_communicative(self, staff_agent, partner=None) -> bool:
         """Return whether staff can talk to someone already co-present in their task context."""
 
-        if getattr(staff_agent, "senior_oversight_only", False):
-            return False
         mode = getattr(staff_agent, "mode", None)
         if staff_agent.is_task_busy() and getattr(staff_agent, "target_patient_id", None) is not None:
             self.ablation_diagnostics["locally_communicative_allowed_count"] += 1
@@ -4193,7 +3744,6 @@ class Simulation:
                         int(initiator.gid)
                     )
                 ),
-                limit=config.MEMORY_RETRIEVAL_LIMIT,
             )
         episode = {
             "episode_schema_version": 2,
@@ -4769,46 +4319,6 @@ class Simulation:
                     })
                 break
 
-    def _log_doctor_coreview_interactions(self) -> None:
-        """Log rare doctor-doctor co-review moments without changing workflow."""
-
-        eligible_modes = {"idle", "returning_home", "patrolling"}
-        doctors = [
-            doctor
-            for doctor in self.doctors
-            if not doctor.is_task_busy()
-            and not getattr(doctor, "senior_oversight_only", False)
-            and doctor.mode in eligible_modes
-            and self.which_zone(*doctor.position) == "COCPIT"
-            and self._station_interaction_ready(doctor, "COCPIT")
-        ]
-        for left_index, left_doctor in enumerate(doctors):
-            for right_doctor in doctors[left_index + 1:]:
-                if left_doctor.distance_to_agent(right_doctor) > config.STATION_COORDINATION_DISTANCE_METERS:
-                    continue
-                pair_key = tuple(sorted((left_doctor.gid, right_doctor.gid)))
-                if pair_key in self.currently_interacting_pairs:
-                    continue
-                last_timestamp = self.last_doctor_coreview_by_pair.get(pair_key)
-                if (
-                    last_timestamp is not None
-                    and (self.timestep - last_timestamp) < config.DOCTOR_COREVIEW_COOLDOWN_SECONDS
-                ):
-                    continue
-                if self.random.random() >= config.DOCTOR_COREVIEW_PROBABILITY:
-                    continue
-                before_count = len(self.interaction_log)
-                self.log_interaction(
-                    agent_1=left_doctor,
-                    agent_2=right_doctor,
-                    position=self._embodied_contact_position(left_doctor, right_doctor),
-                    interaction_type="doctor_doctor_coreview",
-                    reason_for_interaction="brief_case_review_or_documentation_check",
-                )
-                if len(self.interaction_log) > before_count:
-                    self.currently_interacting_pairs.add(pair_key)
-                    self.last_doctor_coreview_by_pair[pair_key] = self.timestep
-                    self.last_opportunistic_station_interaction_by_pair[pair_key] = self.timestep
 
     def _log_opportunistic_corridor_interactions(self) -> None:
         transit_modes = {
@@ -4828,16 +4338,12 @@ class Simulation:
         }
 
         for left_index, left_agent in enumerate(self.staff_agents):
-            if getattr(left_agent, "senior_oversight_only", False):
-                continue
             if left_agent.is_task_busy() and not self._staff_locally_communicative(left_agent):
                 continue
             if left_agent.mode not in transit_modes and not self._staff_locally_communicative(left_agent):
                 continue
 
             for right_agent in self.staff_agents[left_index + 1:]:
-                if getattr(right_agent, "senior_oversight_only", False):
-                    continue
                 if right_agent.is_task_busy() and not self._staff_locally_communicative(right_agent):
                     continue
                 if right_agent.mode not in corridor_available_modes and not self._staff_locally_communicative(right_agent):
@@ -4931,41 +4437,6 @@ class Simulation:
                     self.currently_interacting_pairs.add(pair_key)
                     self.last_opportunistic_corridor_interaction_by_pair[pair_key] = self.timestep
 
-    def _corridor_encounter_midpoint(self, left_agent, right_agent) -> Optional[tuple[float, float]]:
-        left_previous = left_agent.trail[-2] if len(left_agent.trail) >= 2 else left_agent.position
-        right_previous = right_agent.trail[-2] if len(right_agent.trail) >= 2 else right_agent.position
-
-        fractions = (0.0, 0.25, 0.5, 0.75, 1.0)
-        left_points = [
-            (
-                left_previous[0] + ((left_agent.position[0] - left_previous[0]) * fraction),
-                left_previous[1] + ((left_agent.position[1] - left_previous[1]) * fraction),
-            )
-            for fraction in fractions
-        ]
-        right_points = [
-            (
-                right_previous[0] + ((right_agent.position[0] - right_previous[0]) * fraction),
-                right_previous[1] + ((right_agent.position[1] - right_previous[1]) * fraction),
-            )
-            for fraction in fractions
-        ]
-
-        closest_pair = min(
-            (
-                (left_point, right_point)
-                for left_point in left_points
-                for right_point in right_points
-            ),
-            key=lambda pair: math.dist(pair[0], pair[1]),
-        )
-        if math.dist(closest_pair[0], closest_pair[1]) > config.CORRIDOR_ENCOUNTER_DISTANCE_METERS:
-            return None
-
-        return (
-            (closest_pair[0][0] + closest_pair[1][0]) / 2.0,
-            (closest_pair[0][1] + closest_pair[1][1]) / 2.0,
-        )
 
     def _bedside_cotask_interaction_type(self, left_agent, right_agent) -> str:
         roles = {getattr(left_agent, "role", ""), getattr(right_agent, "role", "")}
@@ -4979,11 +4450,7 @@ class Simulation:
 
     def _log_bedside_cotask_interactions(self) -> None:
         for left_index, left_agent in enumerate(self.staff_agents):
-            if getattr(left_agent, "senior_oversight_only", False):
-                continue
             for right_agent in self.staff_agents[left_index + 1:]:
-                if getattr(right_agent, "senior_oversight_only", False):
-                    continue
                 patient = self._co_task_interaction_allowed(left_agent, right_agent)
                 if patient is None:
                     continue
@@ -5097,7 +4564,6 @@ class Simulation:
                 partner for partner in self.staff_agents
                 if partner.gid != initiator.gid
                 and partner.role in preferred_roles
-                and not getattr(partner, "senior_oversight_only", False)
                 and (not partner.is_task_busy() or self._staff_locally_communicative(partner))
                 and (partner.mode in available_modes or self._staff_locally_communicative(partner))
                 and initiator.distance_to_agent(partner) <= config.TASK_TRANSITION_UPDATE_DISTANCE_METERS
@@ -5267,200 +4733,6 @@ class Simulation:
 
         self.pending_task_transition_updates = retained_updates
 
-    def _log_senior_doctor_oversight_interactions(self) -> None:
-        """Log explicit senior reviews after supported doctor task completions."""
-
-        if not self.enable_senior_doctor_oversight or not self.pending_senior_doctor_reviews:
-            return
-        senior_doctors = [
-            doctor for doctor in self.doctors
-            if getattr(doctor, "senior_oversight_only", False)
-            and not doctor.is_task_busy()
-        ]
-        if not senior_doctors:
-            return
-        senior_doctor = senior_doctors[0]
-        staff_lookup = self.staff_by_id()
-        retained_reviews: List[Dict[str, object]] = []
-        available_modes = {"idle", "returning_home", "awaiting_nurse", "patrolling"}
-
-        for review in self.pending_senior_doctor_reviews:
-            if self.timestep > int(review.get("expires_at", self.timestep)):
-                continue
-            initiator = staff_lookup.get(int(review.get("initiator_id", -1)))
-            if (
-                initiator is None
-                or initiator.is_task_busy()
-                or initiator.mode not in available_modes
-                or getattr(initiator, "senior_oversight_only", False)
-            ):
-                retained_reviews.append(review)
-                continue
-            review_zone = str(review.get("review_zone", config.SENIOR_DOCTOR_HOME_ZONE_ID))
-            review_position = self._zone_centroid(review_zone)
-            if math.dist(initiator.position, review_position) > config.SENIOR_DOCTOR_REVIEW_DISTANCE_METERS:
-                retained_reviews.append(review)
-                continue
-            pair_key = tuple(sorted((initiator.gid, senior_doctor.gid)))
-            last_timestamp = self.last_senior_doctor_review_by_pair.get(pair_key)
-            if (
-                last_timestamp is not None
-                and (self.timestep - last_timestamp) < config.SENIOR_DOCTOR_REVIEW_COOLDOWN_SECONDS
-            ):
-                retained_reviews.append(review)
-                continue
-            before_count = len(self.interaction_log)
-            self.log_interaction(
-                agent_1=initiator,
-                agent_2=senior_doctor,
-                position=self._embodied_contact_position(initiator, senior_doctor),
-                interaction_type="senior_doctor_oversight_review",
-                task_name=str(review.get("task_name", "")),
-                reason_for_interaction=f"task_grounded_senior_doctor_review_at_{review_zone}",
-            )
-            if len(self.interaction_log) > before_count:
-                self.currently_interacting_pairs.add(pair_key)
-                self.last_senior_doctor_review_by_pair[pair_key] = self.timestep
-                self.last_opportunistic_station_interaction_by_pair[pair_key] = self.timestep
-
-        self.pending_senior_doctor_reviews = retained_reviews
-
-    def _log_opportunistic_station_interactions(self) -> None:
-        station_modes = {
-            "idle",
-            "returning_home",
-            "waiting_for_doctor",
-            "moving_to_secondary_station",
-            "using_secondary_station",
-            "moving_to_post_task_station_check",
-            "post_task_station_check",
-        }
-        for left_index, left_agent in enumerate(self.staff_agents):
-            if getattr(left_agent, "senior_oversight_only", False):
-                continue
-            if left_agent.is_task_busy() or left_agent.mode not in station_modes:
-                continue
-
-            for right_agent in self.staff_agents[left_index + 1:]:
-                if getattr(right_agent, "senior_oversight_only", False):
-                    continue
-                if right_agent.is_task_busy() or right_agent.mode not in station_modes:
-                    continue
-                self.ablation_diagnostics["eligible_encounters_considered"] += 1
-                midpoint = (
-                    (left_agent.position[0] + right_agent.position[0]) / 2.0,
-                    (left_agent.position[1] + right_agent.position[1]) / 2.0,
-                )
-                zone_id = self.which_zone(*midpoint)
-                if left_agent.distance_to_agent(right_agent) > config.STATION_COORDINATION_DISTANCE_METERS:
-                    self.ablation_diagnostics["rejected_by_distance"] += 1
-                    continue
-
-                if zone_id not in self.station_interaction_zone_ids():
-                    continue
-                if not (
-                    self._station_interaction_ready(left_agent, zone_id)
-                    and self._station_interaction_ready(right_agent, zone_id)
-                ):
-                    self.ablation_diagnostics["rejected_by_station_startup_or_dwell_gate"] += 1
-                    continue
-                gate_result = self._perception_gate(
-                    left_agent,
-                    right_agent,
-                    interaction_type="opportunistic_station",
-                    position=midpoint,
-                )
-                if not gate_result["accepted"]:
-                    self.ablation_diagnostics[str(gate_result["category"])] += 1
-                    self.log_missed_opportunity(
-                        agent=left_agent,
-                        partner=right_agent,
-                        reason="needed_partner_not_visible",
-                        position=midpoint,
-                        perception_state={
-                            "encounter": "station",
-                            "mutual_visibility": False,
-                            "gate_category": gate_result["category"],
-                            "gate_reason": gate_result["reason"],
-                        },
-                        task_state=left_agent.mode,
-                    )
-                    continue
-
-                pair_key = tuple(sorted((left_agent.gid, right_agent.gid)))
-                if pair_key in self.currently_interacting_pairs:
-                    self.ablation_diagnostics["rejected_by_cooldown"] += 1
-                    self.ablation_diagnostics["repeated_station_pair_suppressed_count"] += 1
-                    continue
-                if self._station_same_dwell_repeat_suppressed(left_agent, right_agent, zone_id):
-                    continue
-                last_timestamp = self.last_opportunistic_station_interaction_by_pair.get(pair_key)
-                if (
-                    last_timestamp is not None
-                    and (self.timestep - last_timestamp)
-                    < config.OPPORTUNISTIC_STATION_INTERACTION_COOLDOWN_SECONDS
-                ):
-                    self.ablation_diagnostics["rejected_by_cooldown"] += 1
-                    self.ablation_diagnostics["station_same_pair_repeat_count"] += 1
-                    self.ablation_diagnostics["repeated_station_pair_suppressed_count"] += 1
-                    continue
-
-                probability = self._hcw_hcw_interaction_probability(
-                    left_agent,
-                    right_agent,
-                    zone_id,
-                    config.OPPORTUNISTIC_STATION_INTERACTION_PROBABILITY,
-                )
-                if self.current_ed_pressure_index() >= self.pressure_action_threshold():
-                    self.ablation_diagnostics["pressure_suppressed_unrelated_interactions"] += 1
-                    if self.random.random() < float(self.scenario_definition.get("pressure_station_social_suppression", 0.0)):
-                        continue
-                if (
-                    zone_id == "COCPIT"
-                    and left_agent.mode == "idle"
-                    and right_agent.mode == "idle"
-                ):
-                    probability *= config.COCPIT_IDLE_COLLOCATION_INTERACTION_MULTIPLIER
-                if self.random.random() >= probability:
-                    self.ablation_diagnostics["rejected_by_probability_or_rule_decision"] += 1
-                    self.log_missed_opportunity(
-                        agent=left_agent,
-                        partner=right_agent,
-                        reason="visible_but_not_attended",
-                        position=midpoint,
-                        perception_state={"encounter": "station", "mutual_visibility": True},
-                        task_state=left_agent.mode,
-                    )
-                    continue
-
-                before_count = len(self.interaction_log)
-                self.log_interaction(
-                    agent_1=left_agent,
-                    agent_2=right_agent,
-                    position=self._embodied_contact_position(left_agent, right_agent),
-                    interaction_type="opportunistic_station",
-                    perception_gate_result=gate_result,
-                )
-                if len(self.interaction_log) > before_count:
-                    self.currently_interacting_pairs.add(pair_key)
-                    self._mark_station_same_dwell_episode(left_agent, right_agent, zone_id)
-                    self.last_opportunistic_station_interaction_by_pair[pair_key] = self.timestep
-
-    def _station_interaction_ready(self, agent, zone_id: Optional[str]) -> bool:
-        """Avoid counting initial co-location as a fresh station encounter."""
-
-        if zone_id not in self.station_interaction_zone_ids():
-            return False
-        entered_at = int(self.zone_entered_at_by_agent.get(agent.gid, self.timestep))
-        dwell_seconds = self.timestep - entered_at
-        if (
-            self.timestep < config.INITIAL_STATION_INTERACTION_GRACE_SECONDS
-            and getattr(agent, "mode", None) == "idle"
-            and zone_id == getattr(agent, "home_zone_id", None)
-        ):
-            return False
-        return dwell_seconds >= config.STATION_INTERACTION_MIN_DWELL_SECONDS
-
     def _station_same_dwell_episode_key(
         self,
         left_agent,
@@ -5518,12 +4790,6 @@ class Simulation:
             zone_counts[zone_id or "Outside named zones"] += 1
 
         return zone_counts
-
-    def _draw_condition_overlays(self, axis) -> None:
-        self.condition_manager.draw_zone_overlays(axis)
-
-    def _draw_floorplan(self, axis) -> None:
-        self.condition_manager.draw_floorplan(axis)
 
     def interaction_type_counts(self, interactions: Optional[Iterable[Dict[str, object]]] = None) -> Counter:
         source = self.interaction_log if interactions is None else interactions
@@ -5656,7 +4922,7 @@ class Simulation:
             bed_assignment_esi_by_bed[bed_label][f"ESI {event.get('esi_level')}"] += 1
         reserved_bed_numbers = {
             int(index) + 1
-            for index in getattr(config, "HIGH_ACUITY_RESERVED_BED_INDICES", set())
+            for index in config.HIGH_ACUITY_RESERVED_BED_INDICES
         }
         reserved_bed_violations = [
             event
@@ -5694,7 +4960,7 @@ class Simulation:
         average_occupancy = mean(bed_occupancy_samples) if bed_occupancy_samples else 0.0
         max_occupancy = max(bed_occupancy_samples) if bed_occupancy_samples else 0
         ordinary_capacity = len(self.ordinary_bed_indices())
-        special_capacity = len(set(getattr(config, "HIGH_ACUITY_RESERVED_BED_INDICES", set())))
+        special_capacity = len(set(config.HIGH_ACUITY_RESERVED_BED_INDICES))
         average_ordinary_occupancy = (
             mean(ordinary_bed_occupancy_samples) if ordinary_bed_occupancy_samples else 0.0
         )
@@ -5887,18 +5153,14 @@ class Simulation:
         }
 
     def llm_metrics(self) -> Dict[str, float]:
-        stats = dict(self.interaction_engine.stats)
-        llm_call_count = int(stats.get("llm_calls", 0))
-        stats["parse_success_rate"] = (
-            stats["parse_successes"] / llm_call_count
-            if llm_call_count > 0
-            else 1.0
-        )
-        stats["fallback_rate"] = (
-            stats["llm_fallbacks"] / llm_call_count
-            if llm_call_count > 0
-            else 0.0
-        )
+        stats = {
+            **self.interaction_engine.stats,
+            # Part 1/2 use the rule stub; Part 3 model calls are brokered and
+            # audited separately from this validated simulation pathway.
+            "llm_calls": 0,
+            "parse_success_rate": 1.0,
+            "fallback_rate": 0.0,
+        }
         stats["decision_calls_per_hour"] = (
             stats["decision_calls"] / max(self.timestep / 3600.0, 1e-9)
         )
@@ -5929,68 +5191,6 @@ class Simulation:
             "average_trip_lengths_by_label": average_trip_lengths,
             "average_trip_durations_by_label": average_trip_durations,
         }
-
-    def save_trace_outputs(self) -> None:
-        config.MEMORY_TRACE_DIR.mkdir(parents=True, exist_ok=True)
-        config.RETRIEVAL_TRACE_DIR.mkdir(parents=True, exist_ok=True)
-        config.REFLECTION_DIR.mkdir(parents=True, exist_ok=True)
-        for agent in self.staff_agents:
-            safe_name = getattr(agent, "name", f"{agent.role}_{agent.gid}").replace(" ", "_")
-            stream = self.interaction_engine.stream_for(agent.gid)
-            memory_payload = [event.__dict__ for event in stream.events[-200:]]
-            retrieval_payload = stream.retrieval_traces[-100:]
-            reflection_payload = [
-                event.__dict__ for event in stream.events
-                if event.event_type == "reflection"
-            ][-50:]
-            if config.SAVE_MEMORY_TRACES:
-                (config.MEMORY_TRACE_DIR / f"{safe_name}_{self.condition_spec.name}_{self.random_seed}.json").write_text(
-                    json.dumps(memory_payload, indent=2)
-                )
-            if config.SAVE_RETRIEVAL_TRACES:
-                (config.RETRIEVAL_TRACE_DIR / f"{safe_name}_{self.condition_spec.name}_{self.random_seed}.json").write_text(
-                    json.dumps(retrieval_payload, indent=2)
-                )
-            (config.REFLECTION_DIR / f"{safe_name}_{self.condition_spec.name}_{self.random_seed}.json").write_text(
-                json.dumps(reflection_payload, indent=2)
-            )
-
-    def generate_agent_shift_narrative(self, agent_gid: int) -> str:
-        agent = next((staff_member for staff_member in self.staff_agents if staff_member.gid == agent_gid), None)
-        if agent is None:
-            return f"Agent {agent_gid} was not present in this simulation."
-
-        dwell_counter = self.zone_dwell_by_agent.get(agent_gid, Counter())
-        top_zones = dwell_counter.most_common(3)
-        zone_phrase = ", ".join(
-            f"{zone_id} ({seconds / 3600.0:.1f} hours)"
-            for zone_id, seconds in top_zones
-        ) or "no named zones"
-
-        agent_interactions = [
-            event
-            for event in self.interaction_log
-            if event["agent_1"] == agent_gid or event["agent_2"] == agent_gid
-        ]
-        type_counts = Counter(str(event.get("interaction_type", "unknown")) for event in agent_interactions)
-        topic_counts = Counter(str(event.get("topic", "unknown")) for event in agent_interactions)
-        total_interactions = len(agent_interactions)
-        topic_phrase = ", ".join(
-            f"{topic} ({(count / max(total_interactions, 1)) * 100.0:.0f}%)"
-            for topic, count in topic_counts.most_common(3)
-        ) or "no recorded topics"
-        type_phrase = ", ".join(
-            f"{interaction_type} ({count})"
-            for interaction_type, count in type_counts.most_common(3)
-        ) or "no interaction categories"
-
-        return (
-            f"{agent.role} (gid={agent.gid}) spent {self.timestep / 3600.0:.0f} hours in the "
-            f"{self.condition_spec.name} ED condition. They moved "
-            f"{self.movement_distance_by_agent.get(agent_gid, 0.0):.0f} metres across the shift, "
-            f"spending most time in {zone_phrase}. They participated in {total_interactions} interactions: "
-            f"{type_phrase}. The most common discussion topics were {topic_phrase}."
-        )
 
     def compute_kde_grid(self):
         points_xy = [
@@ -6081,228 +5281,3 @@ class Simulation:
             self.step()
             if self.timestep % config.HOURLY_REPORT_INTERVAL_SECONDS == 0:
                 self._print_hourly_status()
-
-    def _draw_interactions(self, axis, marker_size: int, alpha: float, z_order: int) -> None:
-        if self.interaction_log:
-            xs = [event["x"] for event in self.interaction_log]
-            ys = [event["y"] for event in self.interaction_log]
-            axis.scatter(
-                xs,
-                ys,
-                c="royalblue",
-                s=marker_size,
-                alpha=alpha,
-                zorder=z_order,
-                label=f"Interactions (n={len(self.interaction_log)})",
-            )
-
-    def _draw_active_agents(self, axis, z_order: int) -> None:
-        plotted_roles = set()
-        for agent in [*self.staff_agents, *self.active_patients]:
-            marker_size = (
-                config.COORDINATION_NURSE_MARKER_SIZE
-                if agent.role == "CoordinationNurse"
-                else config.AGENT_MARKER_SIZE
-            )
-            label = agent.role if agent.role not in plotted_roles else None
-            axis.scatter(
-                agent.position[0],
-                agent.position[1],
-                color=config.ROLE_COLORS[agent.role],
-                marker=config.ROLE_MARKERS[agent.role],
-                s=marker_size,
-                label=label,
-                zorder=z_order,
-            )
-            if hasattr(agent, "heading") and agent.role != "Patient":
-                arrow_length = 0.28
-                axis.arrow(
-                    agent.position[0],
-                    agent.position[1],
-                    math.cos(agent.heading) * arrow_length,
-                    math.sin(agent.heading) * arrow_length,
-                    color=config.ROLE_COLORS[agent.role],
-                    width=0.015,
-                    head_width=0.10,
-                    length_includes_head=True,
-                    alpha=0.85,
-                    zorder=z_order + 1,
-                )
-            plotted_roles.add(agent.role)
-
-    def visualize(self) -> None:
-        figure, axis = plt.subplots(figsize=config.FIGURE_SIZE)
-
-        self._draw_floorplan(axis)
-        self._draw_condition_overlays(axis)
-
-        self._draw_interactions(axis, marker_size=12, alpha=0.5, z_order=5)
-
-        for agent in [*self.staff_agents, *self.completed_patients, *self.active_patients]:
-            trail_xs = [point[0] for point in agent.trail]
-            trail_ys = [point[1] for point in agent.trail]
-            axis.plot(
-                trail_xs,
-                trail_ys,
-                color=config.ROLE_COLORS[agent.role],
-                alpha=config.TRAIL_ALPHA,
-                linewidth=config.TRAIL_LINEWIDTH,
-                zorder=2,
-            )
-
-        self._draw_active_agents(axis, z_order=6)
-
-        min_x, max_x, min_y, max_y = self.environment.plot_bounds
-        axis.set_xlim(min_x, max_x)
-        axis.set_ylim(min_y, max_y)
-        axis.set_aspect("equal")
-        axis.set_xlabel("X (meters)")
-        axis.set_ylabel("Y (meters)")
-        axis.set_title("Phase 1 ED ABM")
-        axis.legend(loc="upper left")
-
-        figure.tight_layout()
-        figure.savefig(config.OUTPUT_FIGURE_PATH, dpi=300)
-        plt.close(figure)
-
-    def animate(self) -> None:
-        import matplotlib.animation as animation
-
-        figure, axis = plt.subplots(figsize=config.FIGURE_SIZE)
-
-        def init_frame():
-            axis.clear()
-            self._draw_floorplan(axis)
-            self._draw_condition_overlays(axis)
-            axis.set_xlim(*self.environment.plot_bounds[:2])
-            axis.set_ylim(*self.environment.plot_bounds[2:])
-            axis.set_aspect("equal")
-            return []
-
-        def update_frame(frame_number):
-            del frame_number
-            for _ in range(config.ANIMATION_STEPS_PER_FRAME):
-                if self.timestep < config.ANIMATION_DURATION_SECONDS:
-                    self.step()
-
-            axis.clear()
-            self._draw_floorplan(axis)
-            self._draw_condition_overlays(axis)
-            self._draw_interactions(axis, marker_size=8, alpha=0.3, z_order=5)
-            self._draw_active_agents(axis, z_order=6)
-
-            simulated_minutes = self.timestep // 60
-            axis.set_title(
-                f"ED Sim - t={simulated_minutes}min | "
-                f"Patients: [W: {len([p for p in self.active_patients if p.bed_index is None])} | "
-                f"B: {len([p for p in self.active_patients if p.bed_index is not None])}] | "
-                f"Discharged: {len(self.completed_patients)} | "
-                f"Interactions: {len(self.interaction_log)}"
-            )
-            axis.set_xlim(*self.environment.plot_bounds[:2])
-            axis.set_ylim(*self.environment.plot_bounds[2:])
-            axis.set_aspect("equal")
-            return []
-
-        total_frames = max(
-            config.ANIMATION_DURATION_SECONDS // config.ANIMATION_STEPS_PER_FRAME,
-            1,
-        )
-        anim = animation.FuncAnimation(
-            figure,
-            update_frame,
-            frames=total_frames,
-            init_func=init_frame,
-            interval=config.ANIMATION_INTERVAL_MS,
-            blit=False,
-        )
-
-        if config.SAVE_ANIMATION:
-            writer = animation.FFMpegWriter(fps=20)
-            anim.save(str(config.ANIMATION_OUTPUT_PATH), writer=writer)
-            print(f"Animation saved to {config.ANIMATION_OUTPUT_PATH}")
-        else:
-            plt.show()
-
-
-def check_simulation_health(simulation: Simulation) -> None:
-    print(f"\n=== HEALTH CHECK @ {simulation.timestep}s ===")
-
-    print("Patients:")
-    for patient in simulation.active_patients:
-        print(
-            "  "
-            f"gid={patient.gid} "
-            f"task_index={patient.task_index} "
-            f"bed_index={patient.bed_index} "
-            f"claiming_staff_id={patient.claiming_staff_id} "
-            f"requested_doctor_id={patient.requested_doctor_id} "
-            f"seconds_at_current_task={patient.seconds_at_current_task(simulation.timestep)}"
-        )
-
-    print("Staff:")
-    for staff_member in simulation.staff_agents:
-        print(
-            "  "
-            f"gid={staff_member.gid} "
-            f"role={staff_member.role} "
-            f"mode={staff_member.mode} "
-            f"target_patient_id={staff_member.target_patient_id} "
-            f"task_remaining={staff_member.task_remaining}"
-        )
-
-    inconsistencies: List[str] = []
-    staff_lookup = simulation.staff_by_id()
-
-    for patient in simulation.active_patients:
-        if patient.claiming_staff_id is None:
-            continue
-        staff_member = staff_lookup.get(patient.claiming_staff_id)
-        if staff_member is None or staff_member.target_patient_id != patient.gid:
-            inconsistencies.append(
-                "stale_claim "
-                f"patient={patient.gid} "
-                f"claiming_staff_id={patient.claiming_staff_id} "
-                f"staff_target={getattr(staff_member, 'target_patient_id', None)}"
-            )
-
-    for doctor in simulation.doctors:
-        if doctor.mode != "awaiting_nurse":
-            continue
-        nurse = simulation.nurse_by_id.get(doctor.handoff_nurse_id)
-        if nurse is None or nurse.reserved_doctor_id != doctor.gid:
-            inconsistencies.append(
-                "mismatched_handoff "
-                f"doctor={doctor.gid} "
-                f"handoff_patient_id={doctor.handoff_patient_id} "
-                f"handoff_nurse_id={doctor.handoff_nurse_id}"
-            )
-
-    for nurse in simulation.nurses:
-        if nurse.mode == "waiting_for_doctor" and nurse.recheck_timer <= 0:
-            inconsistencies.append(
-                "expired_recheck_block "
-                f"nurse={nurse.gid} "
-                f"patient={nurse.doctor_recheck_patient_id} "
-                f"recheck_failures={nurse.doctor_recheck_failures}"
-            )
-
-    duplicate_doctor_targets: Dict[int, List[int]] = {}
-    for doctor in simulation.doctors:
-        if doctor.target_patient_id is None:
-            continue
-        duplicate_doctor_targets.setdefault(doctor.target_patient_id, []).append(doctor.gid)
-    for patient_id, doctor_ids in duplicate_doctor_targets.items():
-        if len(doctor_ids) > 1:
-            inconsistencies.append(
-                "duplicate_doctor_target "
-                f"patient={patient_id} "
-                f"doctor_ids={doctor_ids}"
-            )
-
-    print("Inconsistencies:")
-    if inconsistencies:
-        for issue in inconsistencies:
-            print(f"  {issue}")
-    else:
-        print("  none")

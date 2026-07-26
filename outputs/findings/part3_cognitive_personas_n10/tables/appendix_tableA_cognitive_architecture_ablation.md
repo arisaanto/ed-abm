@@ -1,0 +1,6 @@
+| Orientation input | No memory | Grounded memory |
+| --- | --- | --- |
+| Generic | 90.0% [83.3, 94.2] | 85.8% [78.5, 91.0] |
+| Persona-conditioned | 68.3% [59.6, 76.0] | 77.5% [69.2, 84.1] |
+
+*Note.* Engagement rate [95% Wilson CI] on the same 120 fixed observed opportunities per cell. Matched factorial effects (95% CI): persona conditioning: -15.0 pp [-21.5, -8.5]; grounded memory: +2.5 pp [-2.8, 7.8]; orientation × memory: +13.3 pp [4.7, 22.0]. This ablation does not represent complete recursive closed-loop trajectories.

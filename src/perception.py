@@ -10,8 +10,6 @@ from dataclasses import dataclass, field
 import math
 from typing import Iterable, List, Optional, Sequence, Tuple
 
-import networkx as nx
-
 import config
 
 
@@ -389,31 +387,3 @@ class PerceptionService:
         if not self._within_fov(right_agent, left_agent.position):
             return False
         return self._has_visibility(left_agent.position, right_agent.position)
-
-    def build_visibility_graph(self, environment, resolution: float) -> nx.Graph:
-        graph = nx.Graph()
-        min_x, max_x, min_y, max_y = environment.plot_bounds
-        x = min_x
-        sample_points: List[Point] = []
-        while x <= max_x:
-            y = min_y
-            while y <= max_y:
-                if self.condition_manager.which_zone(x, y) is not None:
-                    sample_points.append((round(x, 3), round(y, 3)))
-                y += resolution
-            x += resolution
-
-        for point in sample_points:
-            graph.add_node(point)
-
-        for left_index, left_point in enumerate(sample_points):
-            for right_point in sample_points[left_index + 1:]:
-                if self._has_visibility(left_point, right_point):
-                    graph.add_edge(left_point, right_point, weight=math.dist(left_point, right_point))
-
-        return graph
-
-    def compute_visual_integration(self, visibility_graph: nx.Graph) -> dict:
-        if not visibility_graph.nodes:
-            return {}
-        return nx.closeness_centrality(visibility_graph, distance="weight")

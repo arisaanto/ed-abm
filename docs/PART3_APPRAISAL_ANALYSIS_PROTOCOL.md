@@ -26,7 +26,7 @@ interview bundles.
 The primary contrasts are COCPIT only, NURSTA only, and Both minus Baseline,
 separately within scenario, persona, and appraisal dimension.
 
-For every contrast, `scripts/analyze_part3_appraisals.py` reports the
+For every contrast, `scripts/analysis/analyze_part3_appraisals.py` reports the
 equal-seed-weighted paired mean difference, SD and SE across seed-level means,
 Student-t 95% confidence interval, median seed-level difference, and
 positive/negative seed shares. Role-specific mean directions are retained as

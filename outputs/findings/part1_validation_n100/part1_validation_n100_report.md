@@ -4,7 +4,7 @@
 
 This package reports the frozen Part 1 baseline: `normal_load`, `baseline`, seeds 1-100, 43,200 simulated seconds per seed, 7,200 seconds warm-up, and a 10-hour evaluation window per seed. This reporting pass did not run simulations or change model behavior.
 
-Canonical local input/result path: `outputs/latest/ABM_results/part1_validation_n100`
+Canonical local input/result path: `outputs/source_results/part1_validation_n100`
 
 ## Main validation result
 

@@ -38,13 +38,13 @@ test -f "${SOURCE_LOCK}"
 # Refuse a partial or mixed-version deployment before importing project code.
 sha256sum --check --strict "${SOURCE_LOCK}"
 
-python3 scripts/check_part3_closed_loop_preflight.py \
+python3 scripts/validation/check_part3_closed_loop_preflight.py \
   --episode-log "${EVIDENCE_DIR}" \
   --manifest "${MANIFEST}" \
   --study-design main \
   --expected-seed-count 10 \
   --guarded-path jobs/snellius_part3_qwen36_closed_loop_main_n10.sbatch \
-  --guarded-path scripts/analyze_part3_closed_loop_main.py \
+  --guarded-path scripts/analysis/analyze_part3_closed_loop_main.py \
   --duration 8700 \
   --warmup-seconds 7200 \
   --max-model-decisions 5 \
@@ -65,7 +65,7 @@ if [[ -n "${RESUME_RESULTS_DIR}" ]]; then
     echo "Set MODEL_REVISION or restore the cached model revision." >&2
     exit 2
   fi
-  python3 scripts/run_part3_closed_loop_batch.py \
+  python3 scripts/run/run_part3_closed_loop_batch.py \
     --manifest "${MANIFEST}" \
     --output-root "${RESUME_RESULTS_DIR}/main" \
     --batch-name part3_closed_loop_main_n10 \

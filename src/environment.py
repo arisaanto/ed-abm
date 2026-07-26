@@ -1,9 +1,4 @@
-"""Environment and geometry helpers for the ED ABM.
-
-This module owns all geometry loading and spatial queries. Later phases can
-replace the Phase 1 waypoint scaffold with navmesh routing without changing
-agent code or simulation orchestration.
-"""
+"""Environment, geometry, and waypoint-routing helpers for the ED ABM."""
 
 from __future__ import annotations
 
@@ -148,12 +143,7 @@ class Environment:
         return math.dist(left, right)
 
     def plan_route(self, start: Point, end: Point) -> List[Point]:
-        """Return the remaining route from start to end as waypoint positions.
-
-        Phase 1 uses a tiny hand-authored corridor graph rather than navmesh
-        pathfinding. The method still returns a plain list of coordinates so the
-        movement layer can stay unchanged when a richer router arrives later.
-        """
+        """Return the remaining route from start to end as waypoint positions."""
 
         if self.has_line_of_sight(start, end):
             return [end]
@@ -229,39 +219,6 @@ class Environment:
             path.append(current_name)
 
         return list(reversed(path))
-
-    def draw_floorplan(self, axis) -> None:
-        for zone_id, polygon in self.zones.items():
-            xs = [point[0] for point in polygon]
-            ys = [point[1] for point in polygon]
-            axis.plot(
-                xs,
-                ys,
-                color=config.ZONE_COLOR,
-                linewidth=config.ZONE_LINEWIDTH,
-                zorder=1,
-            )
-
-            centroid_x, centroid_y = self.zone_centroids[zone_id]
-            axis.text(
-                centroid_x,
-                centroid_y,
-                zone_id,
-                color=config.ZONE_LABEL_COLOR,
-                fontsize=config.ZONE_LABEL_FONTSIZE,
-                ha="center",
-                va="center",
-                zorder=2,
-            )
-
-        for wall_start, wall_end in self.walls:
-            axis.plot(
-                [wall_start[0], wall_end[0]],
-                [wall_start[1], wall_end[1]],
-                color=config.WALL_COLOR,
-                linewidth=config.WALL_LINEWIDTH,
-                zorder=3,
-            )
 
     def _orientation(self, left: Point, middle: Point, right: Point) -> float:
         return ((middle[0] - left[0]) * (right[1] - left[1])) - (

@@ -154,6 +154,7 @@ def packet_json_schema(packet_type: str, packet: Optional[Mapping[str, Any]] = N
         return _object_schema(properties, properties)
 
     if packet_type == "end_of_shift_survey_bundle":
+        from src.interviews import APPRAISAL_PROSE_LIMITS
         from src.personas import PERSONA_APPRAISAL_DIMENSIONS
 
         response_properties = {
@@ -179,9 +180,12 @@ def packet_json_schema(packet_type: str, packet: Optional[Mapping[str, Any]] = N
             "short_rationale": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 260,
+                "maxLength": APPRAISAL_PROSE_LIMITS["short_rationale"],
             },
-            "uncertainty_note": {"type": "string", "maxLength": 180},
+            "uncertainty_note": {
+                "type": "string",
+                "maxLength": APPRAISAL_PROSE_LIMITS["uncertainty_note"],
+            },
         }
         response_schema = _object_schema(
             response_properties, response_properties
@@ -209,28 +213,41 @@ def packet_json_schema(packet_type: str, packet: Optional[Mapping[str, Any]] = N
         return _object_schema(properties, properties)
 
     if packet_type == "end_of_shift_interview_bundle":
-        from src.interviews import INTERVIEW_QUESTIONS
+        from src.interviews import APPRAISAL_PROSE_LIMITS, INTERVIEW_QUESTIONS
 
         question_ids = [row["question_id"] for row in INTERVIEW_QUESTIONS]
-        nullable_text = {"type": ["string", "null"], "maxLength": 220}
+        nullable_text = {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": APPRAISAL_PROSE_LIMITS["latent_need"],
+        }
         answer_properties = {
             "question_id": {"type": "string", "enum": question_ids},
-            "answer": {"type": "string", "minLength": 1, "maxLength": 360},
+            "answer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": APPRAISAL_PROSE_LIMITS["answer"],
+            },
             "grounded_pattern": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 260,
+                "maxLength": APPRAISAL_PROSE_LIMITS["grounded_pattern"],
             },
             "persona_conditioned_interpretation": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 260,
+                "maxLength": APPRAISAL_PROSE_LIMITS[
+                    "persona_conditioned_interpretation"
+                ],
             },
             "latent_need": nullable_text,
             "design_hypothesis": nullable_text,
             "tradeoff": nullable_text,
             "evidence_event_ids": evidence_array,
-            "uncertainty_note": {"type": "string", "maxLength": 180},
+            "uncertainty_note": {
+                "type": "string",
+                "maxLength": APPRAISAL_PROSE_LIMITS["uncertainty_note"],
+            },
         }
         answer_schema = _object_schema(answer_properties, answer_properties)
         properties = {
@@ -343,6 +360,7 @@ class VLLMOfflineBackend:
         language_model_only: bool = True,
         enable_prefix_caching: bool = True,
         safetensors_load_strategy: str | None = "eager",
+        max_semantic_retries: int = 2,
     ) -> None:
         self.model = model or config.VLLM_MODEL_NAME
         self.model_revision = model_revision or None
@@ -364,6 +382,7 @@ class VLLMOfflineBackend:
         self.language_model_only = bool(language_model_only)
         self.enable_prefix_caching = bool(enable_prefix_caching)
         self.safetensors_load_strategy = safetensors_load_strategy
+        self.max_semantic_retries = max(0, int(max_semantic_retries))
         self._engine = None
         self.engine_load_seconds: float | None = None
 
@@ -450,6 +469,38 @@ class VLLMOfflineBackend:
         )
         return [output.outputs[0].text.strip() for output in outputs]
 
+    def _correction_messages(
+        self,
+        packet: Mapping[str, Any],
+        raw_response: str,
+        error: Exception,
+    ) -> list[dict[str, str]]:
+        """Ask the loaded model to correct one semantically invalid JSON object."""
+
+        messages = self._packet_messages(packet)
+        messages.extend(
+            [
+                {"role": "assistant", "content": raw_response},
+                {
+                    "role": "user",
+                    "content": (
+                        "The previous JSON object failed a strict semantic check: "
+                        f"{error}. Return the complete corrected JSON object only. "
+                        "Keep every claim grounded in the supplied evidence. Public "
+                        "interview answers and survey rationales must be concise, "
+                        "complete plain-English sentences (about 60 words or fewer), "
+                        "with no event IDs, study-process language, or persona labels. "
+                        "Keep analytic fields compact and put citations in their "
+                        "dedicated evidence_event_ids arrays. For an interview bundle, only the "
+                        "counterfactual_change answer may contain a design_hypothesis "
+                        "and tradeoff; both are required there and both must be null "
+                        "for every other question."
+                    ),
+                },
+            ]
+        )
+        return messages
+
     @staticmethod
     def _validated_evidence_ids(
         payload: Mapping[str, Any],
@@ -524,7 +575,12 @@ class VLLMOfflineBackend:
             return response.as_dict()
 
         if packet_type == "end_of_shift_survey_bundle":
-            from src.interviews import SurveyBundleResponse, SurveyDimensionResponse
+            from src.interviews import (
+                APPRAISAL_PROSE_LIMITS,
+                SurveyBundleResponse,
+                SurveyDimensionResponse,
+                appraisal_prose_issues,
+            )
             from src.personas import PERSONA_APPRAISAL_DIMENSIONS
 
             raw_responses = payload.get("responses")
@@ -555,6 +611,24 @@ class VLLMOfflineBackend:
                     raise ValueError(
                         f"Unknown survey rateability for {dimension}: {rateability!r}"
                     )
+                rationale = str(raw.get("short_rationale", "")).strip()
+                uncertainty = str(raw.get("uncertainty_note", "")).strip()
+                prose_issues = appraisal_prose_issues(
+                    rationale,
+                    public=True,
+                    maximum_length=APPRAISAL_PROSE_LIMITS["short_rationale"],
+                )
+                prose_issues.extend(
+                    appraisal_prose_issues(
+                        uncertainty,
+                        maximum_length=APPRAISAL_PROSE_LIMITS["uncertainty_note"],
+                    )
+                )
+                if prose_issues:
+                    raise ValueError(
+                        f"Survey prose for {dimension!r} failed quality checks: "
+                        + "; ".join(prose_issues)
+                    )
                 by_dimension[dimension] = SurveyDimensionResponse(
                     dimension=dimension,
                     rateability=rateability,
@@ -565,8 +639,8 @@ class VLLMOfflineBackend:
                     evidence_event_ids=self._validated_evidence_ids(
                         raw, packet, "evidence_event_ids", require_one=True
                     ),
-                    short_rationale=str(raw.get("short_rationale", "")),
-                    uncertainty_note=str(raw.get("uncertainty_note", "")),
+                    short_rationale=rationale,
+                    uncertainty_note=uncertainty,
                 )
             missing = set(PERSONA_APPRAISAL_DIMENSIONS) - set(by_dimension)
             if missing:
@@ -604,8 +678,10 @@ class VLLMOfflineBackend:
         if packet_type == "end_of_shift_interview_bundle":
             from src.interviews import (
                 INTERVIEW_QUESTIONS,
+                APPRAISAL_PROSE_LIMITS,
                 InterviewAnswer,
                 InterviewBundleResponse,
+                appraisal_prose_issues,
             )
 
             expected_ids = [row["question_id"] for row in INTERVIEW_QUESTIONS]
@@ -656,10 +732,50 @@ class VLLMOfflineBackend:
                     raise ValueError(
                         f"Interview answer {question_id!r} lacks natural or grounded text"
                     )
-                if answer.design_hypothesis and not answer.tradeoff:
+                if answer.design_hypothesis == "" or answer.tradeoff == "":
                     raise ValueError(
-                        f"Design hypothesis for {question_id!r} requires a tradeoff"
+                        f"Design conjecture fields for {question_id!r} must be "
+                        "non-empty strings or null"
                     )
+                if (answer.design_hypothesis is None) != (answer.tradeoff is None):
+                    raise ValueError(
+                        f"Design hypothesis and tradeoff for {question_id!r} must "
+                        "both be non-empty or both be null"
+                    )
+                if question_id == "counterfactual_change":
+                    if answer.design_hypothesis is None or answer.tradeoff is None:
+                        raise ValueError(
+                            "The counterfactual change requires a design hypothesis "
+                            "and tradeoff"
+                        )
+                elif answer.design_hypothesis is not None or answer.tradeoff is not None:
+                    raise ValueError(
+                        f"Design conjecture fields must be null for {question_id!r}"
+                    )
+                prose_fields = {
+                    "answer": (answer.answer, True),
+                    "grounded_pattern": (answer.grounded_pattern, False),
+                    "persona_conditioned_interpretation": (
+                        answer.persona_conditioned_interpretation,
+                        False,
+                    ),
+                    "uncertainty_note": (answer.uncertainty_note, False),
+                }
+                for field_name in ("latent_need", "design_hypothesis", "tradeoff"):
+                    value = getattr(answer, field_name)
+                    if value is not None:
+                        prose_fields[field_name] = (value, False)
+                for field_name, (value, public) in prose_fields.items():
+                    issues = appraisal_prose_issues(
+                        value,
+                        public=public,
+                        maximum_length=APPRAISAL_PROSE_LIMITS[field_name],
+                    )
+                    if issues:
+                        raise ValueError(
+                            f"Interview {question_id!r} field {field_name!r} failed "
+                            "quality checks: " + "; ".join(issues)
+                        )
             response = InterviewBundleResponse(
                 answers=[by_question[key] for key in expected_ids],
                 role_perspective=str(payload.get("role_perspective", "")).strip(),
@@ -748,39 +864,117 @@ class VLLMOfflineBackend:
             "not_human_data": True,
         }
 
-    def generate_prompt_packets(self, packets: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    def generate_prompt_packets(
+        self,
+        packets: Iterable[Mapping[str, Any]],
+        *,
+        preserve_failures: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Generate packets with bounded, audited semantic correction.
+
+        Structured decoding guarantees JSON shape, while domain rules such as the
+        hypothesis/tradeoff pair remain semantic checks. Invalid packets are retried
+        in one batched call while the engine remains loaded. Offline workflows can
+        preserve an exhausted failure for the strict verifier instead of losing the
+        other responses in the batch.
+        """
+
         packet_list = [dict(packet) for packet in packets]
         schemas = [
             packet_json_schema(str(packet.get("packet_type", "")), packet)
             for packet in packet_list
         ]
         messages = [self._packet_messages(packet) for packet in packet_list]
-        raw_outputs = self._chat_batch(messages, schemas)
-        results = []
-        for packet, schema, raw_text in zip(packet_list, schemas, raw_outputs):
-            try:
-                payload = json.loads(raw_text)
-            except json.JSONDecodeError as error:
+        pending = list(range(len(packet_list)))
+        normalized_by_index: dict[int, dict[str, Any]] = {}
+        raw_by_index: dict[int, str] = {}
+        exception_by_index: dict[int, Exception] = {}
+        attempt_count_by_index = {index: 0 for index in pending}
+        retry_history: dict[int, list[dict[str, Any]]] = {
+            index: [] for index in pending
+        }
+
+        for attempt in range(self.max_semantic_retries + 1):
+            if not pending:
+                break
+            raw_outputs = self._chat_batch(
+                [messages[index] for index in pending],
+                [schemas[index] for index in pending],
+            )
+            if len(raw_outputs) != len(pending):
+                raise RuntimeError("vLLM returned a different number of packet responses")
+            retry_indexes: list[int] = []
+            for index, raw_text in zip(pending, raw_outputs):
+                packet = packet_list[index]
+                attempt_count_by_index[index] += 1
+                raw_by_index[index] = raw_text
+                try:
+                    payload = json.loads(raw_text)
+                    if not isinstance(payload, Mapping):
+                        raise TypeError("Response JSON must be an object")
+                    normalized_by_index[index] = self.normalize_packet_response(
+                        packet, payload
+                    )
+                except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+                    exception_by_index[index] = error
+                    retry_history[index].append(
+                        {
+                            "attempt": attempt + 1,
+                            "error_type": type(error).__name__,
+                            "error": str(error),
+                            "raw_response_sha256": hashlib.sha256(
+                                raw_text.encode("utf-8")
+                            ).hexdigest(),
+                        }
+                    )
+                    if attempt < self.max_semantic_retries:
+                        messages[index] = self._correction_messages(
+                            packet, raw_text, error
+                        )
+                        retry_indexes.append(index)
+            pending = retry_indexes
+
+        exhausted = sorted(set(range(len(packet_list))) - set(normalized_by_index))
+        if exhausted and not preserve_failures:
+            index = exhausted[0]
+            error = exception_by_index[index]
+            if isinstance(error, json.JSONDecodeError):
                 raise PacketResponseDecodeError(
-                    prompt_id=str(packet.get("prompt_id", "")),
-                    raw_response=raw_text,
+                    prompt_id=str(packet_list[index].get("prompt_id", "")),
+                    raw_response=raw_by_index[index],
                     original_error=error,
                 ) from error
-            normalized = self.normalize_packet_response(packet, payload)
-            results.append(
-                {
-                    "prompt_id": packet.get("prompt_id"),
-                    "packet_type": packet.get("packet_type"),
-                    "model": self.model,
-                    "thinking_enabled": self.enable_thinking,
-                    "response_schema_sha256": hashlib.sha256(
-                        json.dumps(schema, sort_keys=True).encode("utf-8")
-                    ).hexdigest(),
-                    "response": normalized,
-                    "raw_response": raw_text,
-                    "synthetic_design_probe_not_human_data": True,
+            raise ValueError(
+                f"Response for {packet_list[index].get('prompt_id', '')!r} failed "
+                f"after {len(retry_history[index])} attempts: {error}"
+            ) from error
+
+        results = []
+        for index, (packet, schema) in enumerate(zip(packet_list, schemas)):
+            result = {
+                "prompt_id": packet.get("prompt_id"),
+                "packet_type": packet.get("packet_type"),
+                "model": self.model,
+                "thinking_enabled": self.enable_thinking,
+                "response_schema_sha256": hashlib.sha256(
+                    json.dumps(schema, sort_keys=True).encode("utf-8")
+                ).hexdigest(),
+                "response": normalized_by_index.get(index),
+                "raw_response": raw_by_index.get(index, ""),
+                "semantic_retry_count": max(
+                    0, attempt_count_by_index[index] - 1
+                ),
+                "semantic_retry_history": retry_history[index],
+                "synthetic_design_probe_not_human_data": True,
+            }
+            if index in exhausted:
+                error = exception_by_index[index]
+                result["generation_error"] = {
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                    "attempt_count": len(retry_history[index]),
                 }
-            )
+            results.append(result)
         return results
 
 __all__ = [

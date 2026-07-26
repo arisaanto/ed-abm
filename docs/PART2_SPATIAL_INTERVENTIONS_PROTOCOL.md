@@ -8,7 +8,7 @@
 - Seeds: 1-100, paired within scenario
 - Runs: 800
 - Duration: 43,200 seconds; warmup: 7,200 seconds; start hour: 10
-- Canonical results: `outputs/latest/ABM_results/part2_spatial_interventions_n100/`
+- Local canonical source: `outputs/source_results/part2_spatial_interventions_n100/`
 - Integrity: 800 summaries, 800 interaction event files, 800/800 workflow PASS, paired completeness true, hard gates clean
 
 Seed `k` baseline is compared with seed `k` in every intervention condition within the same scenario.

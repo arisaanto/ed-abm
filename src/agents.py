@@ -108,8 +108,6 @@ class Patient(GenericAgent):
         self.coordination_hold_until = spawned_at
         self.coordination_hold_reason: Optional[str] = None
         self.coordination_hold_after_task: Optional[str] = None
-        self.senior_doctor_review_count = 0
-        self.senior_doctor_room_assist_count = 0
         self.escort_corridor_interaction_logged = False
         self.discharged = False
 
@@ -391,7 +389,6 @@ class StaffAgent(GenericAgent, ABC):
             position=patient.position,
             notes=f"{self.role} started {task_name} for patient {patient.gid}",
         )
-        simulation.maybe_log_senior_doctor_room_assist(self, patient, task_name)
         communicative_type = self._workflow_interaction_type(task_name)
         task_probabilities = config.PATIENT_FACING_TASK_INTERACTION_PROBABILITY.get(self.role, {})
         communication_probability = float(task_probabilities.get(task_name, 0.0))
@@ -905,8 +902,6 @@ class CoordinationNurse(StaffAgent):
         return simulation.perception.build_bundle(self, simulation, workflow_candidates)
 
     def attend(self, perception: Any, simulation: "Simulation") -> Optional[Patient]:
-        if getattr(self, "senior_oversight_only", False):
-            return None
         if self.target_patient_id is not None:
             return simulation.patient_by_id.get(self.target_patient_id)
 
@@ -1069,7 +1064,7 @@ class Nurse(StaffAgent):
 
     def _random_secondary_station_zone(self, simulation: "Simulation") -> Optional[str]:
         alternative_zones = [
-            zone_id for zone_id in simulation.station_dwell_zone_ids(self.role) if zone_id != self.home_zone_id
+            zone_id for zone_id in simulation.station_dwell_zone_ids() if zone_id != self.home_zone_id
         ]
         if not alternative_zones:
             return None
@@ -1108,7 +1103,7 @@ class Nurse(StaffAgent):
 
         candidate_points = [
             simulation.condition_manager.station_attractor(zone_id)
-            for zone_id in simulation.station_dwell_zone_ids(self.role)
+            for zone_id in simulation.station_dwell_zone_ids()
             if zone_id != self.home_zone_id
         ]
         viable_points = [
@@ -1545,16 +1540,6 @@ class Doctor(StaffAgent):
         return selected
 
     def act(self, attention: Optional[Patient], simulation: "Simulation") -> None:
-        if getattr(self, "senior_oversight_only", False):
-            self.next_mode = "idle"
-            self.next_position = self.home_position
-            self.next_destination = self.home_position
-            self.next_route_plan = []
-            self.next_route_destination = None
-            self.next_target_patient_id = None
-            self.next_current_task_name = None
-            self.next_task_remaining = 0
-            return
         if self.is_task_busy():
             self.continue_task(simulation)
             return

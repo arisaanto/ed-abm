@@ -166,7 +166,7 @@ DEFAULT_STAFF_PERSONAS: Dict[int, StaffPersona] = {
 }
 
 
-def persona_for_staff(gid: int, role: str, source: str = "named_default") -> StaffPersona:
+def persona_for_staff(gid: int, role: str) -> StaffPersona:
     """Return a stable persona for a staff id, falling back to role-grounded text."""
 
     persona = DEFAULT_STAFF_PERSONAS.get(gid)
@@ -188,7 +188,6 @@ def persona_for_staff(gid: int, role: str, source: str = "named_default") -> Sta
         topic_preferences=["patient_status_update"],
         memory_importance_modifiers={},
         interview_voice_guidelines="Answer from the standpoint of the assigned ED role.",
-        source=source,
     )
 
 
@@ -290,7 +289,7 @@ class CognitivePersona:
 
     @property
     def role_name(self) -> str:
-        """Make the role-independent design explicit in legacy packet fields."""
+        """Expose the role-independent design in packet compatibility fields."""
 
         return "Role-independent cognitive orientation"
 

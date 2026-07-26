@@ -88,25 +88,14 @@ class ConditionSpec:
 class ConditionManager:
     """Derived geometry/accessors for one baseline or intervention condition."""
 
-    def __init__(self, environment, spec: ConditionSpec, active_affordances: Optional[Iterable[Mapping[str, object]]] = None) -> None:
+    def __init__(self, environment, spec: ConditionSpec) -> None:
         self.environment = environment
         self.spec = spec
-        self.affordance_registry: Dict[str, Mapping[str, object]] = {
-            str(affordance["id"]): affordance
-            for affordance in (active_affordances or [])
-        }
-        self.affordance_zone_ids: Tuple[str, ...] = tuple(self.affordance_registry)
         self.zone_polygons: Dict[str, Tuple[Point, ...]] = {
             zone_id: tuple(polygon)
             for zone_id, polygon in environment.zones.items()
         }
         self.zone_polygons.update(spec.zone_polygon_overrides)
-        self.zone_polygons.update(
-            {
-                affordance_id: tuple((float(point[0]), float(point[1])) for point in affordance["polygon"])
-                for affordance_id, affordance in self.affordance_registry.items()
-            }
-        )
         self.zone_centroids: Dict[str, Point] = {
             zone_id: _polygon_centroid(polygon)
             for zone_id, polygon in self.zone_polygons.items()
@@ -119,7 +108,7 @@ class ConditionManager:
         self.station_attractors.update(
             {
                 str(zone_id): (float(point[0]), float(point[1]))
-                for zone_id, point in getattr(config, "DEFAULT_STATION_ATTRACTOR_OVERRIDES", {}).items()
+                for zone_id, point in config.DEFAULT_STATION_ATTRACTOR_OVERRIDES.items()
             }
         )
         self.station_attractors.update(spec.station_attractor_overrides)
@@ -215,94 +204,16 @@ class ConditionManager:
     def adjusted_routing_waypoints(self) -> Dict[str, Point]:
         waypoints = {name: tuple(point) for name, point in config.ROUTING_WAYPOINTS.items()}
         waypoints.update(self.spec.routing_waypoint_overrides)
-        for affordance_id, affordance in self.affordance_registry.items():
-            if bool(affordance.get("supports_routing", False)):
-                waypoints[f"affordance_{affordance_id}"] = self.zone_centroid(affordance_id)
         return waypoints
 
     def point_in_zone(self, x: float, y: float, zone_id: str) -> bool:
         return _point_in_polygon((x, y), self.zone_polygons[zone_id])
 
     def which_zone(self, x: float, y: float) -> Optional[str]:
-        for zone_id in self.affordance_zone_ids:
-            if self.point_in_zone(x, y, zone_id):
-                return zone_id
         for zone_id in self.zone_polygons:
             if self.point_in_zone(x, y, zone_id):
                 return zone_id
         return None
-
-    def draw_zone_overlays(self, axis) -> None:
-        """Draw only overridden zones so interventions remain visible on plots."""
-
-        for zone_id, polygon in self.spec.zone_polygon_overrides.items():
-            if zone_id == "NURSTA":
-                continue
-            xs = [point[0] for point in polygon]
-            ys = [point[1] for point in polygon]
-            axis.plot(xs, ys, color="steelblue", linewidth=1.5, linestyle="--", zorder=2)
-            centroid_x, centroid_y = self.zone_centroid(zone_id)
-            axis.text(
-                centroid_x,
-                centroid_y,
-                f"{zone_id}*",
-                color="steelblue",
-                fontsize=config.ZONE_LABEL_FONTSIZE,
-                ha="center",
-                va="center",
-                zorder=3,
-            )
-
-    def draw_floorplan(self, axis) -> None:
-        """Draw the floorplan with condition-specific render-only styling."""
-
-        for zone_id in self.environment.zones:
-            polygon = self.zone_polygons.get(zone_id, tuple(self.environment.zones[zone_id]))
-            xs = [point[0] for point in polygon]
-            ys = [point[1] for point in polygon]
-            axis.plot(
-                xs,
-                ys,
-                color=config.ZONE_COLOR,
-                linewidth=config.ZONE_LINEWIDTH,
-                zorder=1,
-            )
-
-            centroid_x, centroid_y = self.zone_centroids.get(zone_id, self.environment.zone_centroids[zone_id])
-            axis.text(
-                centroid_x,
-                centroid_y,
-                zone_id,
-                color=config.ZONE_LABEL_COLOR,
-                fontsize=config.ZONE_LABEL_FONTSIZE,
-                ha="center",
-                va="center",
-                zorder=2,
-            )
-
-        suppressed_indices = self.render_suppressed_wall_indices()
-        transparent_condition = self.spec.name in {"cockpit_only", "both"}
-        for index, (wall_start, wall_end) in enumerate(self.environment.walls):
-            if index in suppressed_indices:
-                continue
-            is_transparent = transparent_condition and index in self.transparent_wall_indices
-            axis.plot(
-                [wall_start[0], wall_end[0]],
-                [wall_start[1], wall_end[1]],
-                color="#8FA7B3" if is_transparent else config.WALL_COLOR,
-                linewidth=0.9 if is_transparent else config.WALL_LINEWIDTH,
-                alpha=0.50 if is_transparent else 1.0,
-                zorder=3,
-            )
-
-        for wall_start, wall_end in self.render_added_wall_segments():
-            axis.plot(
-                [wall_start[0], wall_end[0]],
-                [wall_start[1], wall_end[1]],
-                color=config.WALL_COLOR,
-                linewidth=config.WALL_LINEWIDTH,
-                zorder=4,
-            )
 
     def wall_collision(self, position: Point, next_position: Point) -> bool:
         if position == next_position:
@@ -349,7 +260,7 @@ class ConditionManager:
         distance = math.dist(start, end)
         if distance <= 1e-9:
             return True
-        step_length = float(getattr(config, "MOVEMENT_SPEED_METERS_PER_SECOND", 1.0))
+        step_length = float(config.MOVEMENT_SPEED_METERS_PER_SECOND)
         if step_length <= 0:
             step_length = 1.0
         steps = max(1, int(math.ceil(distance / step_length)))

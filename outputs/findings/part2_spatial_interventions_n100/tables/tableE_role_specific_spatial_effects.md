@@ -1,0 +1,10 @@
+| Scenario | Staff role | Δ movement/person (km/run) [95% CI] | Added movement share (%) | Δ staff contacts/person-hour [95% CI] |
+| --- | --- | --- | --- | --- |
+| Normal load | **Coordination nurse** | +0.79 [+0.74, +0.84] | **62.4** | +6.25 [+6.00, +6.51] |
+| Normal load | Doctor | +0.03 [+0.01, +0.05] | 7.4 | +1.30 [+1.15, +1.44] |
+| Normal load | Nurse | +0.08 [+0.06, +0.09] | 30.3 | +1.62 [+1.53, +1.71] |
+| High load | **Coordination nurse** | +0.70 [+0.66, +0.74] | **68.2** | +5.61 [+5.38, +5.83] |
+| High load | Doctor | +0.01 [+0.00, +0.03] | 3.7 | +0.98 [+0.86, +1.10] |
+| High load | Nurse | +0.06 [+0.05, +0.07] | 28.0 | +1.36 [+1.27, +1.44] |
+
+*Note.* Both minus Baseline, paired by seed (n=100 per scenario). Movement is normalized by the fixed role composition: one coordination nurse, three doctors, and five nurses. Staff-contact participation counts each staff member involved in a validation-counted staff–staff interaction and is reported per person across the 10-hour evaluation window. Movement share decomposes the total added staff movement; rounding may prevent exact summation to 100%. Bold identifies the role contributing the majority of added movement.

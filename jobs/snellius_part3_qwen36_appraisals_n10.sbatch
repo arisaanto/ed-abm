@@ -2,8 +2,8 @@
 # Post-main synthetic appraisal endpoint. This does not rerun or modify the ABM.
 # It consumes 800 CPU-preflighted paired packets and generates one survey bundle
 # plus one interview bundle per selected shift with one Qwen engine load.
-# Maximum estimate: 4 A100 x 1.0 h x 128 = 512 GPU SBU. Model loading should
-# dominate; correct this estimate from the observed job before any rerun.
+# Maximum estimate: 4 A100 x 2.0 h x 128 = 1,024 GPU SBU. Actual charging follows
+# observed runtime; the extra ceiling avoids losing a valid run to wall time.
 
 #SBATCH --job-name=abm_p3_appraise
 #SBATCH --partition=gpu_a100
@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=460G
 #SBATCH --gpus=4
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=logs/abm_p3_appraise_%j.out
 #SBATCH --error=logs/abm_p3_appraise_%j.err
 
@@ -30,6 +30,19 @@ CUDA_MODULE="${CUDA_MODULE:-}"
 MODEL_ID="${MODEL_ID:-Qwen/Qwen3.6-35B-A3B}"
 MODEL_CACHE_DIR="${HF_HOME}/hub/models--Qwen--Qwen3.6-35B-A3B"
 MODEL_REVISION="${MODEL_REVISION:-}"
+RESUME_FROM="${RESUME_FROM:-}"
+SEMANTIC_RETRIES="${SEMANTIC_RETRIES:-}"
+if [[ -z "${SEMANTIC_RETRIES}" ]]; then
+  if [[ -n "${RESUME_FROM}" ]]; then
+    SEMANTIC_RETRIES=3
+  else
+    SEMANTIC_RETRIES=2
+  fi
+fi
+if [[ ! "${SEMANTIC_RETRIES}" =~ ^[0-9]+$ ]]; then
+  echo "SEMANTIC_RETRIES must be a non-negative integer" >&2
+  exit 2
+fi
 
 module purge
 module load 2023
@@ -61,6 +74,10 @@ if [[ ! -f "${MAIN_RESULTS_DIR}/integrity_check.json" ]]; then
 fi
 if [[ ! -f "${APPRAISAL_INPUTS_DIR}/appraisal_packet_preflight.json" ]]; then
   echo "Missing CPU-verified appraisal packets: ${APPRAISAL_INPUTS_DIR}" >&2
+  exit 2
+fi
+if [[ -n "${RESUME_FROM}" && ! -f "${RESUME_FROM}" ]]; then
+  echo "Missing previous response JSONL for repair: ${RESUME_FROM}" >&2
   exit 2
 fi
 if find "${SCRATCH_DIR}" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
@@ -97,10 +114,14 @@ if failed or result.get("observed_summary_count") != 400:
 print("Accepted complete 400-run main study for post-run appraisals")
 PY
 cp "${MAIN_RESULTS_DIR}/integrity_check.json" "${SCRATCH_DIR}/accepted_main_integrity.json"
-(
-  cd "${PROJECT_DIR}"
-  sha256sum -c "${APPRAISAL_INPUTS_DIR}/source_sha256.txt"
-)
+if [[ -z "${RESUME_FROM}" ]]; then
+  (
+    cd "${PROJECT_DIR}"
+    sha256sum -c "${APPRAISAL_INPUTS_DIR}/source_sha256.txt"
+  )
+else
+  echo "Repair mode: preserving the immutable v3 packets and revalidating prior raw responses"
+fi
 cp -a "${APPRAISAL_INPUTS_DIR}" "${SCRATCH_DIR}/inputs"
 
 python3 - "${SCRATCH_DIR}/inputs/appraisal_packet_preflight.json" <<'PY'
@@ -128,24 +149,50 @@ if (
     or experience_audit.get("duplicate_place_label_shift_count") != 0
     or experience_audit.get("self_transition_shift_count") != 0
     or experience_audit.get("redundant_travel_wording_shift_count") != 0
-    or result.get("maximum_estimated_tokens", 99999) + 3072 > 12288
+    or experience_audit.get("uninformative_travel_shift_count") != 0
+    or experience_audit.get("internal_label_shift_count") != 0
+    or result.get("maximum_estimated_tokens", 99999) + 4096 > 12288
 ):
     raise SystemExit("Balanced appraisal packet preflight did not pass")
 print("Balanced paired appraisal packet preflight passed")
 PY
 
 PACKET_FILE="${SCRATCH_DIR}/inputs/prompt_packets/end_of_shift_appraisal_prompt_packets.jsonl"
-python3 scripts/run_part3_vllm_offline.py \
+RESUME_ARGS=()
+if [[ -n "${RESUME_FROM}" ]]; then
+  RESUME_ARGS=(--resume-from "${RESUME_FROM}")
+fi
+python3 scripts/run/run_part3_vllm_offline.py \
   --input "${PACKET_FILE}" \
   --output "${SCRATCH_DIR}/responses.jsonl" \
   --model "${MODEL_ID}" \
   --model-revision "${MODEL_REVISION:-}" \
   --tensor-parallel-size 4 \
   --max-model-len 12288 \
-  --max-output-tokens 3072 \
+  --max-output-tokens 4096 \
   --batch-size 16 \
+  --semantic-retries "${SEMANTIC_RETRIES}" \
   --reject-fixtures \
+  "${RESUME_ARGS[@]}" \
+  --summary-json "${SCRATCH_DIR}/inference_preflight.json" \
   --dry-run
+
+if [[ -n "${RESUME_FROM}" ]]; then
+  python3 - "${SCRATCH_DIR}/inference_preflight.json" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+audit = json.loads(Path(sys.argv[1]).read_text()).get("resume_audit") or {}
+reusable = int(audit.get("locally_reusable_response_count", 0))
+repair = int(audit.get("repair_packet_count", 0))
+if reusable + repair != 800 or reusable <= 0 or repair <= 0 or repair >= 800:
+    raise SystemExit(
+        f"Repair preflight refused unsafe inventory: reusable={reusable}, repair={repair}"
+    )
+print(f"Repair preflight passed: preserving {reusable}; regenerating only {repair}")
+PY
+fi
 
 if [[ -z "${MODEL_REVISION}" && -f "${MODEL_CACHE_DIR}/refs/main" ]]; then
   MODEL_REVISION="$(tr -d '[:space:]' < "${MODEL_CACHE_DIR}/refs/main")"
@@ -165,27 +212,31 @@ sha256sum \
   src/interviews.py \
   src/personas.py \
   src/vllm_backend.py \
-  scripts/analyze_part3_appraisals.py \
-  scripts/build_part3_appraisal_packets.py \
-  scripts/run_part3_vllm_offline.py \
-  scripts/verify_part3_vllm_responses.py \
+  manifests/part3_appraisal_analysis_spec.json \
+  scripts/analysis/analyze_part3_appraisals.py \
+  scripts/build/build_part3_appraisal_packets.py \
+  scripts/build/plan_part3_synthetic_study.py \
+  scripts/run/run_part3_vllm_offline.py \
+  scripts/validation/verify_part3_vllm_responses.py \
   jobs/snellius_part3_qwen36_appraisals_n10.sbatch \
   > "${SCRATCH_DIR}/source_sha256.txt"
 
 # Thinking is intentionally disabled. The endpoint requires concise,
 # trace-grounded interpretation rather than chain-of-thought generation.
-python3 scripts/run_part3_vllm_offline.py \
+python3 scripts/run/run_part3_vllm_offline.py \
   --input "${PACKET_FILE}" \
   --output "${SCRATCH_DIR}/responses.jsonl" \
   --model "${MODEL_ID}" \
   --model-revision "${MODEL_REVISION}" \
   --tensor-parallel-size 4 \
   --max-model-len 12288 \
-  --max-output-tokens 3072 \
+  --max-output-tokens 4096 \
   --batch-size 16 \
-  --reject-fixtures
+  --semantic-retries "${SEMANTIC_RETRIES}" \
+  --reject-fixtures \
+  "${RESUME_ARGS[@]}"
 
-python3 scripts/verify_part3_vllm_responses.py \
+python3 scripts/validation/verify_part3_vllm_responses.py \
   --input "${PACKET_FILE}" \
   --responses "${SCRATCH_DIR}/responses.jsonl" \
   --out-json "${SCRATCH_DIR}/verification.json" \
@@ -202,15 +253,20 @@ if (
     or result.get("schema_or_grounding_error_count") != 0
     or result.get("missing_response_count") != 0
     or result.get("unexpected_response_count") != 0
+    or result.get("semantic_correction_exhausted_count") != 0
     or result.get("appraisal_packet_counts")
     != {"end_of_shift_interview_bundle": 400, "end_of_shift_survey_bundle": 400}
     or result.get("appraisal_human_review_required") is not True
 ):
     raise SystemExit("Appraisal technical verification failed")
-print("Appraisals passed technical checks; human review remains mandatory")
+print(
+    "Appraisals passed technical checks; human review remains mandatory; "
+    f"semantic retries={result.get('semantic_retry_total', 0)} across "
+    f"{result.get('semantic_retry_packet_count', 0)} packets"
+)
 PY
 
-python3 scripts/analyze_part3_appraisals.py \
+python3 scripts/analysis/analyze_part3_appraisals.py \
   --packets "${PACKET_FILE}" \
   --responses "${SCRATCH_DIR}/responses.jsonl" \
   --verification "${SCRATCH_DIR}/verification.json" \

@@ -1,0 +1,9 @@
+| Orientation | Overall fit | Coordination | Focus | Legibility | Representative design response |
+| --- | --- | --- | --- | --- | --- |
+| **Team Connector** | **4.4 → 5.1 (+0.7)** | 3.9 → 4.5 (+0.6) | 4.0 → 4.3 (+0.3) | 4.8 → 5.8 (+1.0) | I would introduce a dedicated, semi-private huddle zone near the shared circulation area, distinct from the nurse station and COCPIT. |
+| **Focus Protector** | **5.8 → 5.8 (+0.0)** | 3.7 → 4.2 (+0.5) | 5.7 → 5.7 (+0.0) | 5.0 → 5.8 (+0.8) | I would add a semi-private huddle space near the COCPIT for quick, focused handoffs. |
+| **Patient Advocate** | **4.0 → 4.4 (+0.4)** | 3.3 → 3.8 (+0.5) | 3.7 → 3.8 (+0.1) | 5.1 → 5.7 (+0.6) | Creating a semi-private, fixed standing area within the circulation zone, adjacent to the COCPIT station, would best support patient-centered work. |
+| **Vigilant Monitor** | **3.9 → 4.5 (+0.6)** | 3.4 → 3.4 (+0.0) | 3.7 → 3.7 (+0.0) | 5.0 → 5.4 (+0.4) | I would introduce semi-private, acoustically buffered nooks within the shared circulation area. |
+| **Adaptive Generalist** | **4.0 → 4.6 (+0.6)** | 3.3 → 3.5 (+0.2) | 3.6 → 3.9 (+0.3) | 5.0 → 5.7 (+0.7) | I would introduce a semi-private huddle space near the COCPIT station for brief, focused discussions. |
+
+*Note.* High load; each score is Baseline → Both (change) on a 1–7 scale, averaged across 10 paired seeds. The response is the first sentence of the nearest-to-median-fit representative synthetic interview bundle for Both. These are designed-orientation appraisals, not Zurich ED staff testimony.

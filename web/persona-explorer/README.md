@@ -26,51 +26,46 @@ http://localhost:8000/?persona=team_connector&scenario=normal_load&condition=bot
 ```
 
 Use the browser's Print command to save that selected view as PDF. The normal
-interactive interface is unchanged when `paper=1` is absent. Static cards
-should only be exported after `persona-results.json` is replaced with verified
-observed appraisal results.
+interactive interface is unchanged when `paper=1` is absent. Static cards use
+the same verified observed appraisal results as the interactive view.
 
 ## Results contract
 
 `data/persona-results.json` is the only study-data input. Its current records
-are explicitly marked `preview_placeholder` and are not scientific results.
-Each record is keyed by:
+are verified synthetic appraisal results generated from the completed Part 3
+study. They are not human participant data or psychological measurements. Each
+record is keyed by:
 
 ```text
 persona + scenario + condition
 ```
 
-The production export should preserve the same keys and provide:
+Every result preserves the same keys and provides:
 
 - four 1–7 experience scores;
 - the aggregate sample size;
-- up to three selected or synthesized qualitative responses grounded in the
-  appraisal outputs, provided as a `quotes` array;
-- `meta.status: "observed"` after verification.
+- three exact qualitative excerpts from a representative appraisal bundle;
+- `meta.status: "observed"`.
 
 OCEAN values are a presentation-only crosswalk from preregistered workplace
 priors. They are not measured psychometric scores and do not drive the model.
 
-Preview and observed records provide up to three concise `quotes`. Answers
-begin with the experienced consequence rather than repeating the question or
-announcing scenario and condition labels.
+Each record provides a supportive feature, a difficult feature, and a
+counterfactual change from one complete synthetic interview bundle. The bundle
+is selected nearest the cell-median fit after deterministic language and
+grounding screens. These are synthetic interviews, not Zurich ED staff
+testimony.
 
-After appraisal verification and manual review, generate the observed JSON
+Regenerate the complete Part 3 findings package and observed explorer JSON
 with:
 
 ```bash
-python3 scripts/export_part3_persona_explorer_data.py \
-  --analysis-dir /path/to/verified_appraisal_analysis \
-  --output web/persona-explorer/data/persona-results-observed.json
+python3 scripts/build/build_part3_figures_tables.py
 ```
 
-The exporter refuses incomplete review coverage. Exactly three responses per
-persona/scenario/condition cell must be explicitly selected in
-`interview_manual_review_sample.csv`; selected responses must pass grounding,
-direct-answer, unobtrusive-context, claim-layer, tradeoff, and naturalness
-review. The four displayed values map directly to overall person-space fit,
-team awareness, task continuity, and spatial legibility. No composite score is
-constructed.
+The build refuses incomplete appraisal or ablation inputs. The four displayed
+values map directly to overall person-space fit, team awareness, task
+continuity, and spatial legibility. No composite score is constructed.
 
 The interface self-hosts Press Start 2P, Silkscreen, and VT323 under the SIL
 Open Font License 1.1; all three font licenses are included in `assets/fonts/`.

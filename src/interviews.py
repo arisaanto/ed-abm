@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import asdict, dataclass
-import json
-from typing import Any, Iterable, Mapping, Optional
+import re
+from typing import Any, Mapping
 
-import config
 from src.personas import PERSONA_APPRAISAL_DIMENSIONS
 
 
@@ -56,14 +54,28 @@ APPRAISAL_CLAIM_LAYERS = {
         "pattern and orientation. It is a design hypothesis, not observed testimony."
     ),
     "design_hypothesis": (
-        "An optional spatial or operational proposal. It must include a plausible "
-        "tradeoff and must never be reported as an observed outcome."
+        "A spatial or operational proposal used only for counterfactual_change. "
+        "That question requires both a non-empty design_hypothesis and tradeoff; "
+        "both fields must be null for every other question. A proposal must never "
+        "be reported as an observed outcome."
     ),
 }
 
 APPRAISAL_LANGUAGE_RULES = [
     "Write in natural first-person workplace language, not as a data analyst.",
     "Answer directly; do not repeat or paraphrase the question before answering it.",
+    (
+        "Keep each public answer to two or three complete sentences and each "
+        "analytic field to one complete sentence. Never stop mid-sentence."
+    ),
+    (
+        "Write every prose field in plain English. Cite event IDs only in the "
+        "evidence_event_ids array, never inside prose."
+    ),
+    (
+        "Apply the designed orientation silently. Never mention an orientation, "
+        "persona, archetype, or profile in any answer or rationale."
+    ),
     (
         "Do not announce the study context with phrases such as 'under high load', "
         "'during normal load', 'in the baseline', or 'in this condition'. Let the "
@@ -73,14 +85,82 @@ APPRAISAL_LANGUAGE_RULES = [
         "Begin with a concrete observation, tension, or consequence a colleague "
         "might naturally remember, not with a scenario or layout label."
     ),
+    (
+        "Avoid canned openings such as 'The shift felt like', 'Two moments stood "
+        "out', and 'The layout forces a trade-off'; begin with the substance."
+    ),
     "Describe one or two representative moments; do not recite an itinerary.",
     "Do not mention logs, metrics, evidence IDs, the ABM, prompts, or persona titles in the answer.",
     "Do not invent diagnoses, outcomes, emotions, motives, speech, or events.",
     "Do not claim that a spatial feature caused speed, efficiency, safety, care quality, or staff wellbeing; those outcomes were not modeled.",
     "A listed feature is context, not proof of effect; connect any interpretation to cited recurring patterns or moments.",
     "General workplace knowledge may shape an interpretation or design hypothesis, never an event claim.",
+    (
+        "Use design_hypothesis and tradeoff only for counterfactual_change, where "
+        "both must be non-empty strings. Return both as null for every other question."
+    ),
     "Use insufficient evidence when the supplied shift cannot support a credible answer.",
 ]
+
+APPRAISAL_PROSE_LIMITS = {
+    "short_rationale": 420,
+    "answer": 520,
+    "grounded_pattern": 360,
+    "persona_conditioned_interpretation": 360,
+    "latent_need": 300,
+    "design_hypothesis": 300,
+    "tradeoff": 300,
+    "uncertainty_note": 240,
+}
+
+
+_EVENT_ID_IN_PROSE = re.compile(r"\b(?:shift_)?event_\d+\b", re.IGNORECASE)
+_PUBLIC_PROCESS_LANGUAGE = re.compile(
+    r"\b(?:log|logs|logged|metric|metrics|dataset|data point|evidence id|"
+    r"agent-based model|abm|prompt|persona|archetype|profile|simulated agent|"
+    r"language model|llm|model output)\b|"
+    r"\b(?:my|the|this|designed|cognitive|assigned)\s+"
+    r"(?:workplace\s+)?orientation\b",
+    re.IGNORECASE,
+)
+_PUBLIC_CONTEXT_OPENING = re.compile(
+    r"^(?:under|during|in)\s+(?:the\s+)?(?:high(?:[- ]load)?|normal(?:[- ]load)?|"
+    r"baseline|this (?:scenario|condition)|(?:cockpit|nursta|both) condition)\b",
+    re.IGNORECASE,
+)
+_CJK_CHARACTER = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff]")
+_COMPLETE_SENTENCE_END = re.compile(r"[.!?](?:[\"']|\))?$")
+
+
+def appraisal_prose_issues(
+    text: Any,
+    *,
+    public: bool = False,
+    maximum_length: int | None = None,
+) -> list[str]:
+    """Return deterministic quality defects in generated appraisal prose."""
+
+    value = str(text or "").strip()
+    issues = []
+    if not value:
+        return ["empty prose"]
+    if _CJK_CHARACTER.search(value):
+        issues.append("non-English CJK fragment appears inside prose")
+    if public:
+        complete = bool(_COMPLETE_SENTENCE_END.search(value))
+        if not complete:
+            issues.append("prose does not end with a complete sentence")
+        if maximum_length is not None and len(value) >= maximum_length and not complete:
+            issues.append("prose reaches its schema character limit")
+        if _EVENT_ID_IN_PROSE.search(value):
+            issues.append("event ID appears inside public prose")
+        if _PUBLIC_PROCESS_LANGUAGE.search(value):
+            issues.append(
+                "analysis or persona-construction language appears in public prose"
+            )
+        if _PUBLIC_CONTEXT_OPENING.search(value):
+            issues.append("public prose restates its scenario or condition")
+    return issues
 
 CANONICAL_TOPIC_FAMILIES = [
     "patient_status_update",
@@ -410,171 +490,3 @@ def required_output_schema(
             "evidence_ids": "list of cited evidence ids",
         }
     return schemas.get(packet_type, {"answer": "structured JSON", "not_human_data": True})
-
-
-def _top_memories(stream, limit: int = 5) -> list:
-    memories = [
-        event for event in stream.events
-        if event.event_type in {"communicative_interaction", "reflection", "missed_opportunity"}
-    ]
-    memories.sort(key=lambda event: (event.importance, event.timestamp), reverse=True)
-    return memories[:limit]
-
-
-def _answer_from_trace(agent, simulation, question: str, memories: list) -> tuple[str, str, list[str], bool]:
-    persona = getattr(agent, "persona", None)
-    role = agent.role
-    tolerance = getattr(persona, "interruption_tolerance", 0.5)
-    concern = getattr(persona, "priorities", ["safe care"])[0] if getattr(persona, "priorities", None) else "safe care"
-    top_memory = memories[0] if memories else None
-    top_memory_text = top_memory.summary if top_memory is not None else "no single strong incident"
-    missed_for_agent = [
-        event for event in simulation.missed_opportunity_log
-        if event.get("agent_id") == agent.gid
-    ]
-    top_missed = missed_for_agent[0] if missed_for_agent else None
-    top_topics = Counter(event.topic for event in memories if event.topic)
-    top_zones = Counter(event.zone_id for event in memories if event.zone_id)
-    topic = top_topics.most_common(1)[0][0] if top_topics else "coordination"
-    zone = top_zones.most_common(1)[0][0] if top_zones else "the care area"
-    high_acuity = [event for event in memories if event.esi_level in {1, 2}]
-    missed_count = len(missed_for_agent)
-    interruption_count = len([
-        event for event in simulation.interruption_log
-        if event.get("agent_1_id") == agent.gid or event.get("agent_2_id") == agent.gid
-    ])
-    unsupported = []
-
-    if "visibility" in question.lower():
-        if top_memory is None:
-            answer = "I do not have one clear moment that supports a visibility claim."
-        else:
-            answer = (
-                f"The clearest moment for me was in {zone}: "
-                f"{top_memory_text} It affected timing of contact, not where I was allowed to move."
-            )
-    elif "movement" in question.lower() or "effort" in question.lower():
-        distance = simulation.movement_distance_by_agent.get(agent.gid, 0.0)
-        answer = (
-            f"I covered about {distance:.0f} meters. What mattered was whether that "
-            f"movement supported {concern}, not the distance by itself."
-        )
-    elif "coordination" in question.lower():
-        if top_memory is None:
-            answer = "I do not have one clear coordination moment to point to."
-        else:
-            answer = (
-                f"The moment I would point to involved {topic} around {zone}: {top_memory_text}"
-            )
-    elif "interrupt" in question.lower():
-        answer = (
-            f"I had {interruption_count} interruptions and {missed_count} moments when "
-            f"contact did not happen. Given my relatively "
-            f"{'low' if tolerance < 0.45 else 'high' if tolerance > 0.7 else 'moderate'} interruption tolerance, "
-            "I would treat that as a workload signal rather than a simple benefit."
-        )
-    elif "urgent" in question.lower() or "routine" in question.lower():
-        if high_acuity:
-            answer = (
-                f"The moment that pulled most of my attention was: {high_acuity[0].summary}. "
-                "Visibility helped most when it supported rapid clarification without making anyone invent a new route."
-            )
-        else:
-            answer = (
-                "I do not have a strong ESI 1 or 2 incident to draw from. "
-                "I cannot make a supported claim about urgent-patient benefit from this run."
-            )
-            unsupported.append("urgent_patient_claim_not_supported")
-    elif "privacy" in question.lower() or "exposure" in question.lower():
-        answer = (
-            f"The relevant moment involved {topic} around {zone}. "
-            "I would be cautious about privacy or exposure claims unless a longer run shows repeated bedside or station incidents."
-        )
-    elif "prefer" in question.lower():
-        answer = (
-            "I cannot compare conditions from a single-condition smoke run. "
-            f"For this run, I would only say that the layout should protect {concern} while making availability legible."
-        )
-        unsupported.append("single_condition_no_preference_comparison")
-    elif "specific" in question.lower() or "incident" in question.lower():
-        if memories:
-            answer = f"The clearest incident I can cite was: {memories[0].summary}"
-        else:
-            answer = "This smoke run did not leave enough memories for a specific incident."
-    else:
-        answer = (
-            f"From my {role} perspective, the clearest pattern involved {topic} around "
-            f"{zone}: {top_memory_text}."
-        )
-    if not memories:
-        unsupported.append("no_supporting_memory")
-    if "specific" in question.lower() and top_memory is None:
-        unsupported.append("specific_incident_unavailable")
-    if top_missed is not None and "missed" not in answer.lower() and "interrupt" in question.lower():
-        unsupported.append("missed_opportunity_not_described")
-    prompt_leakage = "Answer as" in answer
-    if prompt_leakage:
-        unsupported.append("prompt_leakage_detected")
-    return answer, "trace_supported" if memories else "low_support", unsupported, prompt_leakage
-
-
-def interview_agent(agent, simulation, questions: Optional[Iterable[str]] = None) -> dict:
-    stream = simulation.interaction_engine.stream_for(agent.gid)
-    memories = _top_memories(stream)
-    memory_ids = [event.memory_id for event in memories]
-    event_ids = sorted({
-        support_id for event in memories for support_id in event.support_ids if support_id
-    })
-    answers = []
-    for question in (questions or INTERVIEW_PROTOCOL):
-        answer, support_level, unsupported, prompt_leakage = _answer_from_trace(agent, simulation, question, memories)
-        answers.append(
-            {
-                "question": question,
-                "answer": answer,
-                "answer_mode": "rule_trace_narrative",
-                "cited_memory_ids": memory_ids[:5],
-                "cited_event_ids": event_ids[:5],
-                "confidence": support_level,
-                "support_level": support_level,
-                "unsupported_claim_flags": unsupported,
-                "prompt_leakage_detected": prompt_leakage,
-                "condition": simulation.condition_spec.name,
-                "agent_name": getattr(agent, "name", f"{agent.role} {agent.gid}"),
-                "agent_role": agent.role,
-                "model_backend": simulation.interaction_backend_name,
-                "raw_response": None,
-                "fallback": True,
-                "support_check": "answers are generated from local trace summaries, not human testimony",
-            }
-        )
-    persona_payload = agent.persona.as_dict() if hasattr(agent.persona, "as_dict") else None
-    if isinstance(persona_payload, dict):
-        persona_payload.pop("interview_voice_guidelines", None)
-    return {
-        "agent_id": agent.gid,
-        "agent_name": getattr(agent, "name", f"{agent.role} {agent.gid}"),
-        "agent_role": agent.role,
-        "condition": simulation.condition_spec.name,
-        "seed": simulation.random_seed,
-        "model_variant": simulation.model_variant,
-        "included_in_behavioral_ablation": False,
-        "simulation_metrics_should_match_generative_interaction": True,
-        "interview_outputs_generated": True,
-        "backend": simulation.interaction_backend_name,
-        "persona": persona_payload,
-        "answers": answers,
-    }
-
-
-def run_post_condition_interviews(simulation) -> dict:
-    config.INTERVIEW_DIR.mkdir(parents=True, exist_ok=True)
-    payload = {}
-    for agent in simulation.staff_agents:
-        interview = interview_agent(agent, simulation)
-        safe_name = interview["agent_name"].replace(" ", "_")
-        payload[str(agent.gid)] = interview
-        if config.SAVE_INTERVIEW_OUTPUTS:
-            path = config.INTERVIEW_DIR / f"{safe_name}_{simulation.condition_spec.name}_{simulation.random_seed}.json"
-            path.write_text(json.dumps(interview, indent=2))
-    return payload

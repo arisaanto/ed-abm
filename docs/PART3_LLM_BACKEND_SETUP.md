@@ -80,16 +80,10 @@ sbatch jobs/snellius_part3_qwen36_appraisals_n10.sbatch
    or interview outputs or exporting the persona explorer data.
 
 The optional architecture ablation is prepared with
-`scripts/build_part3_ablation_packets.py`. It is a complete 2 x 2 comparison of
+`scripts/build/build_part3_ablation_packets.py`. It is a complete 2 x 2 comparison of
 full versus neutral workplace orientation and retained versus removed grounded
 memory. Building its packets is CPU-only; inference is deferred until the main
 appraisal endpoint passes and remaining GPU budget is known.
-
-## Cheap environment validation
-
-`jobs/snellius_part3_vllm_validation.sbatch` exercises the same offline backend
-with a small model before any new large-model environment is trusted. It is an
-environment check, not a scientific experiment.
 
 ## Budget
 
