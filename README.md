@@ -104,7 +104,8 @@ development.
 - [Part 2 intervention findings](outputs/findings/part2_spatial_interventions_n100/)
 - [Part 2 sensitivity findings](outputs/findings/part2_parameter_sensitivity_n20/)
 - [Part 3 cognitive-orientation findings](outputs/findings/part3_cognitive_personas_n10/)
-- [Interactive persona explorer](web/persona-explorer/)
+- [Interactive persona explorer](https://arisaanto.github.io/ed-abm/)
+- [Persona explorer source](web/persona-explorer/)
 
 Figures are retained as publication-ready PDF and review-friendly PNG files.
 Tables are retained as LaTeX for the manuscript, CSV for analysis, and
@@ -117,8 +118,6 @@ Markdown for repository review.
 - [Part 2 intervention protocol](docs/PART2_SPATIAL_INTERVENTIONS_PROTOCOL.md)
 - [Part 3 protocol](docs/PART3_PLAN.md)
 - [Part 3 appraisal analysis plan](docs/PART3_APPRAISAL_ANALYSIS_PROTOCOL.md)
-- [Paper figure and table strategy](docs/PAPER_FIGURE_TABLE_STRATEGY.md)
-- [Literature reference map](docs/LITERATURE_REFERENCE_MAP.md)
 
 ## Data Availability
 

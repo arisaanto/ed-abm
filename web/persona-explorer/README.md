@@ -4,6 +4,8 @@ Static HTML/CSS/JavaScript interface for browsing Part 3 persona appraisals by
 scenario and spatial condition. It is suitable for GitHub Pages and has no
 build step or runtime dependency.
 
+Public interface: <https://arisaanto.github.io/ed-abm/>
+
 ## Local preview
 
 From this directory:
