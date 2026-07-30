@@ -9,9 +9,9 @@
 
 ## Tables
 
-- **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one representative synthetic design response.
+- **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one independently audited synthetic response.
 - **TableB — Inclusive-fit effects.** Changes in average fit, fit floor, and between-orientation dispersion for all three interventions.
-- **TableC — Recurrent synthetic design priorities.** Persona-by-priority percentages from transparent coding of 400 counterfactual answers.
+- **TableC — Audited synthetic design suggestions.** Independent Codex coding of the 30 grounded counterfactual answers retained from the prespecified 40-bundle audit.
 - **Appendix TableA — Architecture ablation.** Compact matched 2 × 2 persona-conditioning-by-memory results on fixed observed opportunities.
 
 ## Interpretation boundary
@@ -26,9 +26,17 @@ compressed trace evidence, so those post-hoc associations cannot be interpreted
 as causal mediation.
 
 The counterfactual table is hypothesis-generating. It records recurrent proposals
-from synthetic interviews, not preferences reported by Zurich ED staff. Its
-strongest cross-orientation pattern is selective permeability: visual access
-paired with acoustic or semi-private buffering.
+from synthetic interviews, not preferences reported by Zurich ED staff. Among the
+30 independently audited and retained answers, semi-private coordination space was
+the most recurrent suggestion, followed by visual permeability, distributed
+support, availability signalling, and acoustic control. These categories were
+assigned in a post-hoc model-assisted audit, not a human thematic analysis.
+
+The qualitative display sample was reviewed independently by Codex against
+grounding and claim-layer criteria. This process retained 184 of 240 answers and
+selected 107 for display. No human interview review or inter-rater reliability
+assessment was performed, and two persona-condition cells have no retained
+qualitative excerpt.
 
 ## Build
 

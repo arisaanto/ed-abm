@@ -55,6 +55,17 @@ DEFAULT_STUDY_FIGURES_DIR = (
 DEFAULT_EXPLORER_DATA = (
     PROJECT_DIR / "web" / "persona-explorer" / "data" / "persona-results.json"
 )
+DEFAULT_REVIEW_DIR = (
+    PROJECT_DIR
+    / "outputs"
+    / "findings"
+    / "part3_cognitive_personas_n10"
+    / "review"
+)
+DEFAULT_REVIEWED_INTERVIEWS = DEFAULT_REVIEW_DIR / "reviewed_interview_sample.csv"
+DEFAULT_REVIEWED_COUNTERFACTUALS = (
+    DEFAULT_REVIEW_DIR / "reviewed_counterfactual_codes.csv"
+)
 
 SCENARIOS = ("normal_load", "high_load_high_acuity")
 CONDITIONS = ("baseline", "cockpit_only", "nursta_only", "both")
@@ -132,13 +143,6 @@ SCORE_DIMENSIONS = {
     "focus_support": "task_continuity",
     "spatial_legibility": "spatial_legibility",
 }
-QUOTE_QUESTIONS = (
-    "supportive_feature",
-    "difficult_feature",
-    "counterfactual_change",
-)
-
-
 class ResultSource:
     """Read named files from an extracted result tree or .tar.gz archive."""
 
@@ -1887,7 +1891,7 @@ def _score_transition(baseline: float, both: float) -> str:
 
 def _table_persona_appraisals(
     survey: pd.DataFrame,
-    quote_selections: Mapping[tuple[str, str, str], list[str]],
+    reviewed_interviews: pd.DataFrame,
 ) -> pd.DataFrame:
     dimensions = {
         "Overall fit": "overall_person_space_fit",
@@ -1912,13 +1916,28 @@ def _table_persona_appraisals(
                 dimension=dimension,
             )
             scores[label] = _score_transition(baseline, both)
-        response = quote_selections[(persona, "high_load", "both")][2]
+        candidates = reviewed_interviews[
+            (reviewed_interviews["scenario"] == "high_load_high_acuity")
+            & (reviewed_interviews["condition"] == "both")
+            & (reviewed_interviews["persona_id"] == persona)
+            & reviewed_interviews["include_in_explorer"].astype(bool)
+        ].copy()
+        if candidates.empty:
+            response = "No grounded qualitative excerpt was retained."
+        else:
+            candidates["question_priority"] = (
+                candidates["question_id"] != "counterfactual_change"
+            ).astype(int)
+            candidates = candidates.sort_values(
+                ["question_priority", "explorer_display_order"]
+            )
+            response = _quote_excerpt(str(candidates.iloc[0]["answer"]))
         response_sentences = _sentences(response)
         records.append(
             {
                 "Orientation": PERSONA_LABELS[persona],
                 **scores,
-                "Representative design response": (
+                "Representative grounded response": (
                     response_sentences[0] if response_sentences else response
                 ),
             }
@@ -2044,105 +2063,85 @@ def _quote_excerpt(answer: str) -> str:
     return " ".join(selected)
 
 
-_MECHANICAL_LANGUAGE = re.compile(
-    r"\b(?:shift_event|events?\s*\d|designed orientation|synthetic persona|"
-    r"under high load|during normal load|in this condition|in the baseline|"
-    r"\d+\s*[- ]?\s*(?:seconds?|minutes?))\b",
-    re.IGNORECASE,
-)
-_REPORT_LANGUAGE = re.compile(
-    r"\b(?:as evidenced by|substantial contact activity|"
-    r"moderate colleague visibility|no mutual visibility)\b",
-    re.IGNORECASE,
-)
-_UNSUPPORTED_OBSERVED_PRIVACY = re.compile(
-    r"\b(?:privacy|private|confidential|confidentiality|dignity|dignified)\b",
-    re.IGNORECASE,
-)
-
-
-def _quote_penalty(question_id: str, excerpt: str) -> int:
-    penalty = 0
-    words = len(excerpt.split())
-    if _MECHANICAL_LANGUAGE.search(excerpt):
-        penalty += 8
-    penalty += 2 * len(_REPORT_LANGUAGE.findall(excerpt))
-    if question_id != "counterfactual_change" and _UNSUPPORTED_OBSERVED_PRIVACY.search(
-        excerpt
-    ):
-        penalty += 8
-    if words < 10:
-        penalty += 3
-    if words > 55:
-        penalty += 3
-    return penalty
-
-
-def _select_representative_quotes(
-    survey: pd.DataFrame,
-    interviews: pd.DataFrame,
+def _select_reviewed_quotes(
+    reviewed_interviews: pd.DataFrame,
 ) -> tuple[dict[tuple[str, str, str], list[str]], pd.DataFrame]:
-    fit = _fit_rows(survey)
-    fit_by_pair = fit.set_index("pair_id")["fit"].to_dict()
-    relevant = interviews[interviews["question_id"].isin(QUOTE_QUESTIONS)].copy()
     selections: dict[tuple[str, str, str], list[str]] = {}
     audit_rows: list[dict[str, Any]] = []
-    for key, cell in relevant.groupby(["scenario", "condition", "persona_id"]):
-        fit_values = fit[
-            (fit["scenario"] == key[0])
-            & (fit["condition"] == key[1])
-            & (fit["persona_id"] == key[2])
-        ]["fit"]
-        median_fit = float(fit_values.median())
-        candidates = []
-        for pair_id, bundle in cell.groupby("pair_id"):
-            answers = {
-                str(row["question_id"]): row
-                for _, row in bundle.iterrows()
-            }
-            if set(answers) != set(QUOTE_QUESTIONS) or pair_id not in fit_by_pair:
-                continue
-            excerpts = {
-                question: _quote_excerpt(str(answers[question]["answer"]))
-                for question in QUOTE_QUESTIONS
-            }
-            penalty = sum(
-                _quote_penalty(question, excerpts[question])
-                for question in QUOTE_QUESTIONS
-            )
-            candidates.append(
-                (
-                    penalty,
-                    abs(float(fit_by_pair[pair_id]) - median_fit),
-                    str(pair_id),
-                    excerpts,
-                    answers,
-                )
-            )
-        if not candidates:
-            raise ValueError(f"No complete interview bundle for {key}")
-        penalty, _, pair_id, excerpts, answers = sorted(candidates)[0]
+    required = {
+        "scenario",
+        "condition",
+        "persona_id",
+        "pair_id",
+        "question_id",
+        "answer",
+        "prompt_id",
+        "review_grounding_pass",
+        "review_claim_layer_pass",
+        "include_in_explorer",
+        "explorer_display_order",
+        "reviewer_type",
+        "human_review_completed",
+    }
+    missing = required - set(reviewed_interviews.columns)
+    if missing:
+        raise ValueError(f"Reviewed interview file is missing columns: {sorted(missing)}")
+    if reviewed_interviews["human_review_completed"].astype(bool).any():
+        raise ValueError("Codex audit must not be mislabeled as human review")
+    for key, cell in reviewed_interviews.groupby(
+        ["scenario", "condition", "persona_id"]
+    ):
+        selected = cell[cell["include_in_explorer"].astype(bool)].copy()
+        selected = selected.sort_values("explorer_display_order")
+        if not selected.empty and (
+            not selected["review_grounding_pass"].astype(bool).all()
+            or not selected["review_claim_layer_pass"].astype(bool).all()
+        ):
+            raise ValueError(f"Failed answer selected for explorer in {key}")
         explorer_key = (key[2], EXPLORER_SCENARIOS[key[0]], key[1])
-        selections[explorer_key] = [excerpts[question] for question in QUOTE_QUESTIONS]
-        for order, question in enumerate(QUOTE_QUESTIONS, start=1):
-            source_answer = _normalize_text(answers[question]["answer"])
-            excerpt = excerpts[question]
-            if excerpt not in source_answer:
-                raise ValueError(f"Explorer excerpt is not verbatim for {pair_id}, {question}")
+        if selected.empty:
+            placeholder = "No grounded qualitative excerpt was retained for this cell."
+            selections[explorer_key] = [placeholder]
             audit_rows.append(
                 {
                     "Scenario": SCENARIO_LABELS[key[0]],
                     "Condition": CONDITION_LABELS[key[1]],
                     "Orientation": PERSONA_LABELS[key[2]],
-                    "Pair ID": pair_id,
-                    "Pair fit": float(fit_by_pair[pair_id]),
-                    "Cell median fit": median_fit,
-                    "Selection penalty": penalty,
-                    "Display order": order,
-                    "Question": question.replace("_", " ").title(),
+                    "Pair ID": "",
+                    "Display order": 1,
+                    "Question": "No retained excerpt",
+                    "Exact excerpt": placeholder,
+                    "Source prompt ID": "",
+                    "Verbatim check": False,
+                    "Review status": "no_grounded_quote_retained",
+                    "Reviewer type": "independent_model_assisted_audit",
+                    "Human review completed": False,
+                }
+            )
+            continue
+        excerpts = [_quote_excerpt(str(value)) for value in selected["answer"]]
+        selections[explorer_key] = excerpts
+        for excerpt, (_, row) in zip(excerpts, selected.iterrows()):
+            source_answer = _normalize_text(row["answer"])
+            if excerpt not in source_answer:
+                raise ValueError(
+                    f"Explorer excerpt is not verbatim for {row['pair_id']}, "
+                    f"{row['question_id']}"
+                )
+            audit_rows.append(
+                {
+                    "Scenario": SCENARIO_LABELS[key[0]],
+                    "Condition": CONDITION_LABELS[key[1]],
+                    "Orientation": PERSONA_LABELS[key[2]],
+                    "Pair ID": row["pair_id"],
+                    "Display order": int(row["explorer_display_order"]),
+                    "Question": str(row["question_id"]).replace("_", " ").title(),
                     "Exact excerpt": excerpt,
-                    "Source prompt ID": answers[question]["prompt_id"],
+                    "Source prompt ID": row["prompt_id"],
                     "Verbatim check": True,
+                    "Review status": "retained_after_independent_audit",
+                    "Reviewer type": row["reviewer_type"],
+                    "Human review completed": False,
                 }
             )
     expected = len(SCENARIOS) * len(CONDITIONS) * len(PERSONAS)
@@ -2154,11 +2153,11 @@ def _select_representative_quotes(
 def _export_explorer(
     template: dict[str, Any],
     survey: pd.DataFrame,
-    interviews: pd.DataFrame,
+    reviewed_interviews: pd.DataFrame,
     appraisal_summary: Mapping[str, Any],
     output_path: Path,
 ) -> pd.DataFrame:
-    quotes, quote_audit = _select_representative_quotes(survey, interviews)
+    quotes, quote_audit = _select_reviewed_quotes(reviewed_interviews)
     fit = _fit_rows(survey)
     score_groups: dict[tuple[str, str, str, str], list[float]] = defaultdict(list)
     paired_units: dict[tuple[str, str, str], set[str]] = defaultdict(set)
@@ -2202,14 +2201,38 @@ def _export_explorer(
         "claim_boundary": appraisal_summary["claim_boundary"],
         "score_dimension_map": SCORE_DIMENSIONS,
         "quote_selection": (
-            "One complete synthetic interview bundle per cell, selected nearest the "
-            "cell-median fit after deterministic language and grounding screens. "
-            "Displayed text is a verbatim excerpt."
+            "One prespecified synthetic interview bundle per scenario-condition-"
+            "orientation cell was independently audited by Codex. Only answers passing "
+            "grounding and claim-layer checks were eligible; displayed text is a "
+            "verbatim excerpt."
         ),
+        "qualitative_review": {
+            "reviewer_type": "independent_model_assisted_audit",
+            "reviewer_system": "OpenAI Codex",
+            "human_review_completed": False,
+            "answer_count": int(len(reviewed_interviews)),
+            "answers_passing_scientific_use_gate": int(
+                (
+                    reviewed_interviews["review_grounding_pass"].astype(bool)
+                    & reviewed_interviews["review_claim_layer_pass"].astype(bool)
+                ).sum()
+            ),
+            "selected_display_answer_count": int(
+                reviewed_interviews["include_in_explorer"].astype(bool).sum()
+            ),
+            "cells_without_retained_excerpt": int(
+                sum(
+                    values == [
+                        "No grounded qualitative excerpt was retained for this cell."
+                    ]
+                    for values in quotes.values()
+                )
+            ),
+        },
         "note": (
             "Scores are direct means of verified synthetic appraisal dimensions. "
-            "Quotes are exact excerpts from representative synthetic interviews, "
-            "not Zurich ED staff testimony."
+            "Quotes are exact excerpts retained by an independent Codex audit, not "
+            "human-reviewed material or Zurich ED staff testimony."
         ),
     }
     template["results"] = results
@@ -2489,63 +2512,45 @@ def _trace_fit_associations(
     )
 
 
-def _counterfactual_design_matrix(interviews: pd.DataFrame) -> pd.DataFrame:
-    counterfactuals = interviews[
-        interviews["question_id"] == "counterfactual_change"
-    ].copy()
-    if len(counterfactuals) != 400:
-        raise ValueError(
-            f"Expected 400 counterfactual answers; got {len(counterfactuals)}"
-        )
-    answer = counterfactuals["answer"].fillna("").str.lower()
-    patterns = {
-        "Visual permeability or awareness": (
-            r"transparen|visual|visibility|intervisib|status board|sightline|"
-            r"line of sight|blind spot"
-        ),
-        "Semi-private coordination space": (
-            r"semi-private|private|privacy|huddle|alcove|pod|nook|screen"
-        ),
-        "Distributed support near active work": (
-            r"near patient|near the patient|decentral|distributed|closer to patient|"
-            r"at bedside|bedside|without.*return|without.*travel|reduce travel"
-        ),
-        "Acoustic control or quiet": r"acoustic|sound|noise|quiet",
-        "Availability or focus signalling": (
-            r"availab|focus mode|do not disturb|status indicator|"
-            r"indicator of.*status|signal"
-        ),
-    }
-    flags: dict[str, pd.Series] = {
-        label: answer.str.contains(pattern, regex=True)
-        for label, pattern in patterns.items()
-    }
-    flags["Visual access with acoustic/private buffering"] = flags[
-        "Visual permeability or awareness"
-    ] & (
-        flags["Semi-private coordination space"]
-        | flags["Acoustic control or quiet"]
-    )
-    ordered = [
-        "Visual permeability or awareness",
-        "Semi-private coordination space",
-        "Visual access with acoustic/private buffering",
-        "Distributed support near active work",
-        "Acoustic control or quiet",
-        "Availability or focus signalling",
+def _reviewed_design_suggestions(
+    reviewed_interviews: pd.DataFrame,
+    reviewed_counterfactuals: pd.DataFrame,
+) -> pd.DataFrame:
+    dispositions = reviewed_interviews[
+        reviewed_interviews["question_id"] == "counterfactual_change"
+    ][
+        [
+            "prompt_id",
+            "review_grounding_pass",
+            "review_claim_layer_pass",
+        ]
     ]
+    coded = reviewed_counterfactuals.merge(
+        dispositions, on="prompt_id", validate="one_to_one"
+    )
+    coded = coded[
+        coded["review_grounding_pass"].astype(bool)
+        & coded["review_claim_layer_pass"].astype(bool)
+    ].copy()
+    if len(coded) != 30:
+        raise ValueError(f"Expected 30 retained counterfactual answers; got {len(coded)}")
+    labels = {
+        "semi_private": "Semi-private coordination space",
+        "visual": "Visual permeability or awareness",
+        "distributed": "Distributed support near active work",
+        "availability": "Availability or focus signalling",
+        "acoustic": "Acoustic control or quiet",
+    }
     records = []
-    for label in ordered:
-        counterfactuals[label] = flags[label]
-        by_persona = counterfactuals.groupby("persona_id")[label].mean()
+    for code, label in labels.items():
+        matched = coded[f"manual_{code}"].astype(bool)
+        personas = coded.loc[matched, "persona_id"].nunique()
+        count = int(matched.sum())
         records.append(
             {
-                "Design priority": label,
-                **{
-                    PERSONA_LABELS[persona]: f"{100.0 * by_persona[persona]:.1f}%"
-                    for persona in PERSONAS
-                },
-                "Overall": f"{100.0 * flags[label].mean():.1f}%",
+                "Synthetic design suggestion": label,
+                "Retained answers, n (%)": f"{count}/30 ({100.0 * count / 30:.1f}%)",
+                "Orientations represented": f"{personas}/5",
             }
         )
     return pd.DataFrame(records)
@@ -2563,9 +2568,9 @@ def _write_report(output_dir: Path, font_family: str) -> None:
 
 ## Tables
 
-- **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one representative synthetic design response.
+- **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one independently audited synthetic response.
 - **TableB — Inclusive-fit effects.** Changes in average fit, fit floor, and between-orientation dispersion for all three interventions.
-- **TableC — Recurrent synthetic design priorities.** Persona-by-priority percentages from transparent coding of 400 counterfactual answers.
+- **TableC — Audited synthetic design suggestions.** Independent Codex coding of the 30 grounded counterfactual answers retained from the prespecified 40-bundle audit.
 - **Appendix TableA — Architecture ablation.** Compact matched 2 × 2 persona-conditioning-by-memory results on fixed observed opportunities.
 
 ## Interpretation boundary
@@ -2580,9 +2585,17 @@ compressed trace evidence, so those post-hoc associations cannot be interpreted
 as causal mediation.
 
 The counterfactual table is hypothesis-generating. It records recurrent proposals
-from synthetic interviews, not preferences reported by Zurich ED staff. Its
-strongest cross-orientation pattern is selective permeability: visual access
-paired with acoustic or semi-private buffering.
+from synthetic interviews, not preferences reported by Zurich ED staff. Among the
+30 independently audited and retained answers, semi-private coordination space was
+the most recurrent suggestion, followed by visual permeability, distributed
+support, availability signalling, and acoustic control. These categories were
+assigned in a post-hoc model-assisted audit, not a human thematic analysis.
+
+The qualitative display sample was reviewed independently by Codex against
+grounding and claim-layer criteria. This process retained 184 of 240 answers and
+selected 107 for display. No human interview review or inter-rater reliability
+assessment was performed, and two persona-condition cells have no retained
+qualitative excerpt.
 
 ## Build
 
@@ -2620,7 +2633,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         )
         persona_effects = main_source.read_csv("analysis/paired_persona_effects.csv")
         survey = appraisal_source.read_csv("analysis/survey_responses.csv")
-        interviews = appraisal_source.read_csv("analysis/interview_responses.csv")
+        reviewed_interviews = pd.read_csv(Path(args.reviewed_interviews).resolve())
+        reviewed_counterfactuals = pd.read_csv(
+            Path(args.reviewed_counterfactuals).resolve()
+        )
         ablation_cells = ablation_source.read_csv(
             "analysis/architecture_ablation_cells.csv"
         )
@@ -2631,9 +2647,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
 
         fit = _fit_rows(survey)
         ensemble = _ensemble_seed_summary(fit)
-        quote_selections, quote_audit = _select_representative_quotes(
-            survey, interviews
-        )
+        _, quote_audit = _select_reviewed_quotes(reviewed_interviews)
         _plot_study_overview(study_figures_dir)
         _plot_interaction_pipeline(study_figures_dir)
         _plot_persona_atlas(template, figures_dir)
@@ -2641,17 +2655,18 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         _plot_exposure_uptake(experience_effects, persona_effects, figures_dir)
         _plot_fit_ensemble(fit, ensemble, figures_dir)
 
-        table_a = _table_persona_appraisals(survey, quote_selections)
+        table_a = _table_persona_appraisals(survey, reviewed_interviews)
         _write_table(
             table_a,
             tables_dir / "tableA_persona_appraisal_profiles",
             bold_columns=("Orientation", "Overall fit"),
             note=(
                 "High load; each score is Baseline → Both (change) on a 1–7 scale, "
-                "averaged across 10 paired seeds. The response is the first sentence "
-                "of the nearest-to-median-fit representative synthetic interview bundle "
-                "for Both. These are designed-orientation appraisals, not Zurich ED "
-                "staff testimony."
+                "averaged across 10 paired seeds. The response was retained from the "
+                "prespecified high-load/Both bundle after an independent Codex grounding "
+                "and claim-layer audit. These are designed-orientation appraisals and "
+                "synthetic responses, not Zurich ED staff testimony or human-coded "
+                "interviews."
             ),
         )
 
@@ -2689,22 +2704,27 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             ),
         )
 
-        table_c = _counterfactual_design_matrix(interviews)
+        table_c = _reviewed_design_suggestions(
+            reviewed_interviews, reviewed_counterfactuals
+        )
         priority_cells = {
             (row_index, column)
             for row_index in range(min(2, len(table_c)))
-            for column in ("Design priority", "Overall")
+            for column in (
+                "Synthetic design suggestion",
+                "Retained answers, n (%)",
+            )
         }
         _write_table(
             table_c,
             tables_dir / "tableC_recurrent_design_priorities",
             bold_cells=priority_cells,
             note=(
-                "Percentage of 80 verified counterfactual answers per orientation "
-                "(400 total) that mention each design priority. Categories overlap. "
-                "Rows are ordered by overall frequency; the two most recurrent priorities "
-                "are bold. Coding uses public answer text only. These are synthetic design "
-                "hypotheses for future evaluation, not Zurich ED staff preferences."
+                "Independent Codex coding of 30 grounded counterfactual answers retained "
+                "from the 40 prespecified bundles; ten were excluded for grounding or "
+                "claim-layer failures. Categories overlap. The two most recurrent "
+                "suggestions are bold. This is a post-hoc model-assisted audit, not human "
+                "thematic analysis or Zurich ED staff preference evidence."
             ),
         )
 
@@ -2725,7 +2745,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         exported_quote_audit = _export_explorer(
             template,
             survey,
-            interviews,
+            reviewed_interviews,
             appraisal_summary,
             Path(args.explorer_output).resolve(),
         )
@@ -2793,6 +2813,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--main-source", default=str(DEFAULT_MAIN_SOURCE))
     parser.add_argument("--appraisal-source", default=str(DEFAULT_APPRAISAL_SOURCE))
     parser.add_argument("--ablation-source", default=str(DEFAULT_ABLATION_SOURCE))
+    parser.add_argument(
+        "--reviewed-interviews", default=str(DEFAULT_REVIEWED_INTERVIEWS)
+    )
+    parser.add_argument(
+        "--reviewed-counterfactuals", default=str(DEFAULT_REVIEWED_COUNTERFACTUALS)
+    )
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument(
         "--study-figures-dir", default=str(DEFAULT_STUDY_FIGURES_DIR)

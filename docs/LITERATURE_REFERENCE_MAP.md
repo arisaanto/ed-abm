@@ -1,6 +1,11 @@
 # Literature Reference Map
 
-Online literature search performed 2026-07-03 and expanded for Part 3 on 2026-07-14 and 2026-07-17. This file is a paper-writing map, not a systematic review. Prefer the linked publisher/DOI record when checking final bibliographic formatting.
+Online literature search performed 2026-07-03 and expanded on 2026-07-14,
+2026-07-17, and 2026-07-26. This file is a paper-writing map, not a systematic
+review. Prefer the linked publisher/DOI record when checking final
+bibliographic formatting. The smaller main-text source set is fixed in
+`LITERATURE_AUDIT.md`; inclusion here does not imply that every reference
+belongs in the report.
 
 ## 1. ED Communication, Teamwork, And Interruptions
 
@@ -15,6 +20,7 @@ Online literature search performed 2026-07-03 and expanded for Part 3 on 2026-07
 | Ratwani RM et al. (2017), "Emergency Physician Use of Cognitive Strategies to Manage Interruptions," *Annals of Emergency Medicine* 70(5):683-687. [DOI](https://doi.org/10.1016/j.annemergmed.2017.04.036) | Physicians immediately engaged 75.4% and multitasked 22.2% of observed incoming interruptions; rejection or delay was under 2%. | Reality check for interpreting action categories and protecting against claims that extreme synthetic rates describe real staff. | The study observed attending physicians receiving interruptions, whereas Part 3 models initiation at ABM-approved interruptible boundaries. Direct numerical comparison is invalid. |
 | Nadon-Robert G et al. (2025), "A battle for attention: how do emergency physicians respond to interruptions? A scoping review," *Canadian Journal of Emergency Medicine*. [PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC12628399/) | Synthesizes task switching, multitasking, deferral, acknowledgement, and rejection and identifies cognitive load, relevance, task, and environment as contextual influences. | Supports the bounded persona-by-context research question and falsification-oriented interpretation. | Evidence remains mostly observational and does not validate project personas or a monotonic urgency rule. |
 | Naccarella L, Raggatt M, Redley B (2019), "The Influence of Spatial Design on Team Communication in Hospital Emergency Departments," *HERD* 12(2). [DOI](https://doi.org/10.1177/1937586718800481) | ED communication depends on visibility, connectedness, privacy, patient proximity, and spaces supporting different kinds of talk. | Part 2 rationale and discussion. | Qualitative/design evidence does not identify a universal optimal layout. |
+| Gharaveis A, Shepley MM, Hamilton DK, Pati D, Rodiek S (2019), "The Influence of Visibility on Staff Face-to-Face Communication and Efficiency in Emergency Departments," *Facilities* 37(5/6):352-363. [DOI](https://doi.org/10.1108/F-07-2018-0077) | In four EDs, interviews and observation linked general and staff-to-staff visibility with communication, supervision, help-seeking, stress, and distraction. | Direct empirical precedent for the Part 2 visibility-to-interaction question. | Exploratory multi-site evidence does not establish that more visibility or communication is always beneficial. |
 | Joshi R et al. (2021), "Emergency Physicians' Workstation Design: An Observational Study of Interruptions and Perception of Collaboration During Shift-End Handoffs," *HERD*. [DOI](https://doi.org/10.1177/19375867211001379) | Connects workstation design, handoff interruption, and perceived collaboration. | Part 2 COCPIT framing; handoff/coordination discussion. | Focused on shift-end physician handoffs, not all ED work. |
 | Gharaveis A, Hamilton DK, Pati D (2018), "The Impact of Environmental Design on Teamwork and Communication in Healthcare Facilities: A Systematic Literature Review," *HERD* 11(1). [DOI](https://doi.org/10.1177/1937586717730333) | Identifies layout, visibility, and accessibility as recurrent design factors in healthcare teamwork/communication. | Introduction; evidence-based design bridge. | Review notes a limited and heterogeneous evidence base. |
 | Gurvich I, Wang L, O'Leary KJ, Van Mieghem JA (2020), "Collaboration, Interruptions and Changeover Times: Model and Empirical Study of Hospitalist Processing Times," *Manufacturing & Service Operations Management*. [DOI](https://doi.org/10.1287/msom.2019.0771) | Shows that collaboration can create task-switching and resumption costs, motivating explicit measurement of interruption/changeover burden. | Part 2 friction interpretation; future logging requirements. | Current ABM does not export interaction-attributable changeover time, so this mechanism cannot be claimed from existing runs. |
@@ -31,6 +37,7 @@ Online literature search performed 2026-07-03 and expanded for Part 3 on 2026-07
 | Reference | Supports | Paper use | Caution |
 |---|---|---|---|
 | Ulrich RS et al. (2008), "A Review of the Research Literature on Evidence-Based Healthcare Design," *HERD* 1(3). [DOI](https://doi.org/10.1177/193758670800100306) | Broad evidence-based design framework linking physical settings to patient and staff outcomes. | Introduction and discussion. | Much evidence concerns outcomes not modeled here; do not transfer claims directly. |
+| Ransolin N, Cheek C, Dominello A, Goirand M, Viray P, Mifsud K, Mitchell G, Hayba N, Richardson L, Clay-Williams R (2026), "Built environment design to support the Emergency Department system, staff and patient outcomes: a systematic literature review," *Architectural Engineering and Design Management*. [DOI](https://doi.org/10.1080/17452007.2026.2653137) | Synthesizes 71 records into 12 design principles and 169 prescriptions spanning system performance, staff experience, patient experience, and patient outcomes; includes simulation, space syntax, visibility, workflow, and communication methods. | Current ED-specific review for the Introduction, design implications, and local-context caution. | The prescriptions organize heterogeneous evidence and are not definitive or universally transferable design rules. |
 | Gharaveis A, Hamilton DK, Pati D (2018). [DOI](https://doi.org/10.1177/1937586717730333) | Healthcare layout can shape teamwork and communication through visibility/accessibility. | Part 2 rationale. | Associations vary by setting and work practice. |
 | Lim L, Zimring CM (2020), "A Conceptual Visibility Framework for Linking Spatial Metrics With Experience and Organizational Outcomes," *HERD* 13(4). [DOI](https://doi.org/10.1177/1937586720916825) | Distinguishes geometric visibility from users' experienced visibility, orientation, targets, and organizational outcomes. | Part 2 analytical funnel. | Spatial metrics are affordance proxies, not outcomes by themselves. |
 | Xuan X, Chen X, Li Z (2020), "Impacts of Nursing Unit Design on Visibility and Proximity and Its Influences on Communication, Privacy, and Efficiency," *HERD* 13(2). [DOI](https://doi.org/10.1177/1937586719881443) | Treats visibility, proximity, communication, privacy, and workflow as linked but distinct dimensions of unit design. | Part 2 coordination–mobility framing. | Survey/observational evidence does not identify a universal visibility optimum. |
@@ -79,6 +86,7 @@ Online literature search performed 2026-07-03 and expanded for Part 3 on 2026-07
 | Grimm V et al. (2010), "The ODD protocol: A review and first update," *Ecological Modelling* 221:2760-2768. [DOI](https://doi.org/10.1016/j.ecolmodel.2010.08.019) | Standardized ABM description through Overview, Design concepts, and Details. | Methods organization and reproducibility. | ODD improves transparency; it does not itself validate a model. |
 | Sargent RG (2013), "Verification and Validation of Simulation Models," *Journal of Simulation* 7:12-24. [DOI](https://doi.org/10.1057/jos.2012.20) | Distinguishes conceptual validity, verification, operational validity, and data validity. | Verification/validation framework. | No single test confers universal validity. |
 | Windrum P, Fagiolo G, Moneta A (2007), "Empirical Validation of Agent-Based Models: Alternatives and Prospects," *JASSS* 10(2):8. [Article](https://www.jasss.org/10/2/8.html) | Discusses generic methodological choices and difficulties in empirical ABM validation. | Part 1 validation rationale/limitations. | Validation is purpose- and pattern-dependent. |
+| Kleijnen JPC (1988), "Analyzing Simulation Experiments with Common Random Numbers," *Management Science* 34(1):65-74. [DOI](https://doi.org/10.1287/mnsc.34.1.65) | Establishes common random numbers as a variance-reduction design and explains why replicated simulation comparisons require covariance-aware analysis. | Part 2 and Part 3 paired-seed design rationale. | Shared seeds improve contrasts but do not repair model invalidity or justify treating within-seed outputs as independent. |
 | Ten Broeke G, van Voorn G, Ligtenberg A (2016), "Which Sensitivity Analysis Method Should I Use for My Agent-Based Model?" *JASSS* 19(1):5. [DOI](https://doi.org/10.18564/jasss.2857) | Recommends extended one-factor-at-a-time screening as a useful starting point for ABMs while noting no method gives a complete picture. | Part 2 sensitivity design. | The planned screen does not quantify parameter interactions or global variance attribution. |
 
 **Project reporting rule:** completed-n100 robustness is stochastic/outlier/scenario stability at default parameters. The final two-phase sensitivity set combines 960 retained Phase 1 runs with a verified 320-run Phase 2 pressure-activation-threshold replacement. The inactive crowding factor remains excluded. The screen supports robustness under the tested active assumptions, not global invariance or parameter-interaction coverage.
@@ -97,11 +105,24 @@ Online literature search performed 2026-07-03 and expanded for Part 3 on 2026-07
 
 ### Internal EVIDENT/Project Sources
 
+- Swiss Center for Design and Health (2026), "EVIDENT: Evidence-based
+  architectural design of emergency departments for greater communication,
+  collaboration and care delivery." [Project
+  page](https://www.scdh.ch/en/projects/evident). This is the public project
+  provenance record: term 2025-2029, led by ETH Zurich, Northumbria University,
+  and the University of Cambridge, with University Hospital Zurich and the UCL
+  Space Syntax Laboratory among the partners.
 - `../shadowing_with-participant-info.csv`: 610 timestamped shadowing records with coordinates, interface type/detail, transmitted information, observer/participant sensor IDs, role, and free-text observation.
 - `../EVIDENT_ShadowingDataset_ARIS.ipynb`: maps coordinates and explores interface, role, information, and spatial distributions.
 - `../ScenarioBuildingAris.pdf`: internal scenario-building context combining data, medical procedure references, expert review, and mechanics.
 
-These internal files support Part 1's empirical scope and Part 2's ED design framing. They are not peer-reviewed literature and should be described as project data/protocol material. The presence of sensor-ID fields does not prove that a Bluetooth threshold alone defined every empirical interaction; the free-text shadowing and coded interface fields show direct observational annotation.
+The public page establishes project context but is not a peer-reviewed protocol.
+The internal files support Part 1's empirical scope and Part 2's ED design
+framing. They are not peer-reviewed literature and should be described as
+project data/protocol material. The presence of sensor-ID fields does not prove
+that a Bluetooth threshold alone defined every empirical interaction; the
+free-text shadowing and coded interface fields show direct observational
+annotation.
 
 ## 7. Human-Building Interaction, Workplace Copresence, And Spatial Cognition
 
@@ -195,7 +216,9 @@ These internal files support Part 1's empirical scope and Part 2's ED design fra
 
 ## Literature Still Worth Retrieving Manually
 
-- The formal EVIDENT project protocol/publication, if one exists, so internal data provenance can be cited beyond project files.
+- A formal EVIDENT protocol or publication, if one becomes available. Until
+  then, use the official SCDH project page only as a provenance and project-scope
+  source.
 - Any publication describing the exact sensor and shadowing integration used in `shadowing_with-participant-info.csv`.
 - ED-specific studies linking space syntax metrics to observed communication with comparable floorplan coordinates.
 - Human-participant evidence on moved/centralized nursing stations and interruption/privacy tradeoffs in EDs.

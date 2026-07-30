@@ -54,7 +54,7 @@ dimension except interruption burden, where lower is favorable. The analysis
 exports that preferred direction explicitly and does not silently reverse or
 combine scores.
 
-## Qualitative analysis
+## Prespecified qualitative analysis
 
 One complete interview per scenario-condition-persona cell is selected
 deterministically for mandatory manual review. Review checks evidence grounding,
@@ -67,6 +67,33 @@ discovery. Themes are coded only after the grounding review. Reported themes
 must be linked back to the paired simulated evidence and described as synthetic
 design probes, never as statements made by real clinicians.
 
+## Post-hoc review disposition
+
+The prespecified human-review step was not completed. At the investigator's
+request, OpenAI Codex instead performed an independent model-assisted audit of
+the same 40 prespecified bundles and all 240 public answers. This is a protocol
+deviation and must not be described as human review, manual human coding, or
+inter-rater validation.
+
+The Codex audit assessed evidence grounding, claim-layer separation,
+naturalness, directness, context labeling, and counterfactual tradeoffs. It
+retained 184 answers for scientific use, excluded 56, and selected 107 grounded
+excerpts for display. Thirty of the 40 counterfactual answers passed both the
+grounding and claim-layer gates. Two persona-condition cells had no acceptable
+display excerpt and are shown as such rather than backfilled from outside the
+prespecified sample.
+
+The five-category regular-expression dictionary was also compared with the
+independent audit. Its macro F1 was 0.69 and its minimum category F1 was 0.36,
+which is inadequate for final frequency claims over all 400 interviews.
+Consequently, the paper table reports only the 30 retained, independently
+assigned counterfactual codes from the prespecified audit sample. These counts
+are exploratory synthetic design suggestions, not human thematic findings.
+
+The frozen review record is
+`manifests/part3_independent_interview_review.json`; reproducible exports are in
+`outputs/findings/part3_cognitive_personas_n10/review/`.
+
 ## Required outputs
 
 - `survey_responses.csv`
@@ -77,6 +104,11 @@ design probes, never as statements made by real clinicians.
 - `interview_manual_review_sample.csv`
 - `interview_manual_coding_template.csv`
 - `appraisal_analysis_summary.json`
+- `reviewed_interview_sample.csv`
+- `reviewed_counterfactual_codes.csv`
+- `dictionary_validation.csv`
+- `review_summary.json`
 
-Final figures and paper tables are deliberately deferred until the response
-verification and manual-review gates pass.
+The original human-review gate remains unmet. Final qualitative figures and
+tables may use the independent Codex audit only when its provenance and the
+absence of human review are disclosed explicitly.

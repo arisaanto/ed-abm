@@ -1,0 +1,18 @@
+{
+  "review_scope": "40 prespecified interview bundles; 240 public answers",
+  "reviewer_type": "independent_model_assisted_audit",
+  "reviewer_system": "OpenAI Codex",
+  "review_date": "2026-07-26",
+  "human_review_completed": false,
+  "provenance_note": "This is a post-hoc independent Codex audit requested by the investigator. It is not human review and does not convert synthetic responses into human testimony.",
+  "bundle_count": 40,
+  "answer_count": 240,
+  "answers_passing_scientific_use_gate": 184,
+  "answers_excluded_from_scientific_use": 56,
+  "bundles_with_at_least_three_usable_answers": 34,
+  "bundles_with_no_display_quote": 2,
+  "selected_display_answer_count": 107,
+  "dictionary_validation_minimum_f1": 0.36363636363636365,
+  "dictionary_validation_macro_f1": 0.6929370310492062,
+  "interpretation": "The audit supports selective use of grounded synthetic responses. It does not satisfy a human-review requirement and does not establish themes as human-coded findings."
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import csv
 import json
 from pathlib import Path
 import unittest
@@ -440,6 +441,44 @@ class AppraisalDesignContracts(unittest.TestCase):
         self.assertEqual(privacy["analysis_status"], "exclude_from_primary_inference")
         self.assertIn("confidentiality", privacy["claim_boundary"])
 
+    def test_independent_interview_audit_is_complete_and_not_human_review(self) -> None:
+        manifest = json.loads(
+            (ROOT / "manifests" / "part3_independent_interview_review.json").read_text()
+        )
+        self.assertEqual(
+            manifest["reviewer_type"],
+            "independent_model_assisted_audit",
+        )
+        self.assertIs(
+            manifest["human_review_completed"],
+            False,
+        )
+        self.assertEqual(len(manifest["bundles"]), 40)
+
+        review_dir = (
+            ROOT
+            / "outputs"
+            / "findings"
+            / "part3_cognitive_personas_n10"
+            / "review"
+        )
+        with (review_dir / "reviewed_interview_sample.csv").open(newline="") as handle:
+            answers = list(csv.DictReader(handle))
+        self.assertEqual(len(answers), 240)
+        self.assertEqual(len({row["prompt_id"] for row in answers}), 40)
+        for row in answers:
+            if row["include_in_explorer"].lower() == "true":
+                self.assertEqual(row["review_grounding_pass"].lower(), "true")
+                self.assertEqual(row["review_claim_layer_pass"].lower(), "true")
+                self.assertEqual(
+                    row["reviewer_type"],
+                    "independent_model_assisted_audit",
+                )
+
+        with (review_dir / "dictionary_validation.csv").open(newline="") as handle:
+            dictionary_rows = list(csv.DictReader(handle))
+        self.assertEqual(len(dictionary_rows), 5)
+
 
 class PersonaExplorerContracts(unittest.TestCase):
     def test_observed_data_and_assets_are_complete(self) -> None:
@@ -449,6 +488,18 @@ class PersonaExplorerContracts(unittest.TestCase):
         self.assertTrue(data["meta"]["scientific_result"])
         self.assertTrue(data["meta"]["not_human_data"])
         self.assertIn("Synthetic persona-conditioned", data["meta"]["claim_boundary"])
+        qualitative_review = data["meta"]["qualitative_review"]
+        self.assertEqual(
+            qualitative_review["reviewer_type"],
+            "independent_model_assisted_audit",
+        )
+        self.assertIs(qualitative_review["human_review_completed"], False)
+        self.assertEqual(qualitative_review["answer_count"], 240)
+        self.assertEqual(
+            qualitative_review["answers_passing_scientific_use_gate"],
+            184,
+        )
+        self.assertEqual(qualitative_review["cells_without_retained_excerpt"], 2)
         expected_count = len(data["personas"]) * len(data["scenarios"]) * len(data["conditions"])
         self.assertEqual(len(data["results"]), expected_count)
         keys = {
@@ -475,7 +526,8 @@ class PersonaExplorerContracts(unittest.TestCase):
                     "spatial_legibility",
                 },
             )
-            self.assertEqual(len(result.get("quotes", [])), 3)
+            self.assertGreaterEqual(len(result.get("quotes", [])), 1)
+            self.assertLessEqual(len(result.get("quotes", [])), 3)
             for quote in result["quotes"]:
                 self.assertTrue(quote.strip())
                 self.assertFalse(

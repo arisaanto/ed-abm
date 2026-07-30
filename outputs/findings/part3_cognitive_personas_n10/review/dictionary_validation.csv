@@ -1,0 +1,6 @@
+design_priority_code,design_priority,true_positive,false_positive,false_negative,true_negative,precision,recall,f1
+visual,Visual permeability or awareness,16,11,0,13,0.5925925925925926,1.0,0.7441860465116279
+semi_private,Semi-private coordination space,21,2,1,16,0.9130434782608695,0.9545454545454546,0.9333333333333332
+distributed,Distributed support near active work,4,7,7,22,0.36363636363636365,0.36363636363636365,0.36363636363636365
+acoustic,Acoustic control or quiet,7,3,0,30,0.7,1.0,0.8235294117647058
+availability,Availability or focus signalling,6,3,5,26,0.6666666666666666,0.5454545454545454,0.6
