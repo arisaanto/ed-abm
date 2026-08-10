@@ -10,11 +10,11 @@ affordances.
 
 ## Study at a Glance
 
-| Part | Question | Design | Status |
-|---|---|---|---|
-| 1. Validate | Does the model reproduce the observed interaction ecology? | Empirical comparison and negative controls across `100` runs | Completed and frozen |
-| 2. Intervene | What changes when spatial design features change? | Four spatial conditions, two operating scenarios, `800` paired runs, and a four-factor sensitivity screen | Completed and frozen |
-| 3. Interpret | Who takes up the new affordances, and how? | Five cognitive orientations balanced across role, condition, scenario, and assignment round in `400` closed-loop runs, followed by synthetic appraisals and a matched architecture ablation | Completed |
+| Part | Question | Design |
+|---|---|---|
+| 1. Validate | Does the model reproduce the observed interaction ecology? | Empirical comparison and negative controls across `100` runs |
+| 2. Intervene | What changes when spatial design features change? | Four spatial conditions, two operating scenarios, `800` paired runs, and a four-factor sensitivity screen |
+| 3. Interpret | Who takes up the new affordances, and how? | Five cognitive orientations balanced across role, condition, scenario, and assignment round in `400` closed-loop runs, followed by synthetic appraisals and a matched architecture ablation |
 
 Part 1 produced `22.14` simulated face-to-face interactions per hour against an
 empirical target of `22.78`, with `100/100` workflow passes and clean hard
