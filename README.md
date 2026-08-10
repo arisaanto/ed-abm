@@ -3,7 +3,7 @@
 A workflow-constrained, spatially embodied agent-based model of face-to-face
 interaction in an emergency department. The study validates the model against
 empirical shadowing data, tests visibility and workstation interventions, and
-examines how five bounded cognitive orientations take up the resulting spatial
+examines how five designed cognitive orientations take up the resulting spatial
 affordances.
 
 ![Study design: validate, intervene, and interpret](outputs/findings/study_overview/figures/study_design_overview.png)
@@ -21,6 +21,9 @@ empirical target of `22.78`, with `100/100` workflow passes and clean hard
 gates. Part 2 completed `800/800` workflow-clean runs. Part 3 completed
 `400/400` runs with balanced orientation exposure, isolated exogenous arrival
 streams, temporal and sampling coverage, and clean technical-integrity gates.
+In a post hoc bridge to observed staff experience, six comparable normal-load
+synthetic questionnaire means were `0.25` scale points from the observed means
+on average; five met the prespecified half-point margin.
 
 ## Model Boundary
 
@@ -47,7 +50,8 @@ scripts/
 jobs/         final Snellius batch definitions retained for reproducibility
 manifests/    paired experiment manifests and source-integrity lock
 data/         non-participant geometry inputs
-docs/         architecture, protocols, analysis plans, and literature map
+docs/         architecture, completed-study protocols, and analysis plans
+tests/        compact study-contract and publication-artifact regression suite
 outputs/
   findings/   publication-ready aggregate figures, tables, and reports
 web/
@@ -104,6 +108,7 @@ development.
 - [Part 2 intervention findings](outputs/findings/part2_spatial_interventions_n100/)
 - [Part 2 sensitivity findings](outputs/findings/part2_parameter_sensitivity_n20/)
 - [Part 3 cognitive-orientation findings](outputs/findings/part3_cognitive_personas_n10/)
+- [Part 3 questionnaire-convergence table](outputs/findings/part3_cognitive_personas_n10/tables/tableD_questionnaire_convergence.md)
 - [Interactive persona explorer](https://arisaanto.github.io/ed-abm/)
 - [Persona explorer source](web/persona-explorer/)
 
@@ -124,8 +129,8 @@ Markdown for repository review.
 This repository contains software, non-participant geometry inputs, aggregate
 reported findings, and the interactive results interface. The
 participant-linked shadowing source and full run-level outputs are not public
-repository assets. A deidentified archival data package and formal software
-citation will be prepared with the manuscript release.
+repository assets. Any future release of deidentified source data remains
+subject to the source study's approval and data-management conditions.
 
 ## Interpretation Limits
 

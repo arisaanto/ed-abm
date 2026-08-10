@@ -12,6 +12,7 @@
 - **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one independently audited synthetic response.
 - **TableB — Inclusive-fit effects.** Changes in average fit, fit floor, and between-orientation dispersion for all three interventions.
 - **TableC — Audited synthetic design suggestions.** Independent Codex coding of the 30 grounded counterfactual answers retained from the prespecified 40-bundle audit.
+- **TableD — Aggregate questionnaire convergence.** Role-standardized synthetic end-of-shift ratings compared descriptively with authorized empirical aggregates from the source ED study.
 - **Appendix TableA — Architecture ablation.** Compact matched 2 × 2 persona-conditioning-by-memory results on fixed observed opportunities.
 
 ## Interpretation boundary
@@ -37,6 +38,14 @@ grounding and claim-layer criteria. This process retained 184 of 240 answers and
 selected 107 for display. No human interview review or inter-rater reliability
 assessment was performed, and two persona-condition cells have no retained
 qualitative excerpt.
+
+The questionnaire audit provides a separate aggregate calibration check. Five of
+six independently assessed 1–7 means fall within the prespecified half-point
+margin after role standardization. Because the observed benchmark informed audit
+development, this is descriptive convergence, not held-out validation of the
+personas or a person-level prediction claim. The critical-workload item is reported
+for completeness but excluded from that vote because its synthetic mean is partly
+fixed by the audit design.
 
 ## Build
 

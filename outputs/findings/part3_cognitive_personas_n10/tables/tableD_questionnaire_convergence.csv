@@ -1,0 +1,8 @@
+construct,empirical_mean,empirical_sd,synthetic_mean,synthetic_sd,absolute_difference,scale
+Maximum workload,4.57,1.55,4.01,1.88,0.56,1-7
+Critically high workload,28.57,29.18,25.00,27.78,3.57,percent
+Concentration,5.00,1.15,5.17,1.54,0.17,1-7
+Communication satisfaction,4.77,1.42,5.08,0.67,0.31,1-7
+Teamwork,5.15,1.21,5.03,0.47,0.12,1-7
+Helpfulness to patients,5.15,0.80,5.22,0.67,0.07,1-7
+Information sufficiency,5.31,1.03,5.04,0.67,0.27,1-7

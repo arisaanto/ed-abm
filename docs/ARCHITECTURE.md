@@ -31,7 +31,7 @@ Condition invariants are implemented in `src/conditions.py`: baseline and `cockp
 
 The optional Part 3 scaffold is downstream and opt-in:
 
-- `src/personas.py`: validated staff personas plus role-independent Part 3 cognitive orientations and balanced assignment logic;
+- `src/personas.py`: staff role definitions, role-independent Part 3 cognitive orientations, and balanced assignment logic;
 - `src/interviews.py`: explicitly synthetic survey/interview schemas;
 - `src/interaction.py`: bounded rule-based interaction engine plus the bridge
   to the opt-in Part 3 controller; it does not load vLLM;

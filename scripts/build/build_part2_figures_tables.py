@@ -538,7 +538,7 @@ def _paired_effects(runs: pd.DataFrame, metrics: Iterable[str]) -> pd.DataFrame:
 
 def _condition_manager(condition: str) -> ConditionManager:
     environment = Environment(config.WALL_POSITIONS_PATH, config.ZONE_BOUNDARIES_PATH)
-    return ConditionManager(environment, get_condition_spec(condition), [])
+    return ConditionManager(environment, get_condition_spec(condition))
 
 
 def _polygon_area(points: Sequence[tuple[float, float]]) -> float:

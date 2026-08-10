@@ -3,9 +3,9 @@
 ## Scope
 
 Part 3 uses Qwen/Qwen3.6-35B-A3B through vLLM's offline `LLM` interface on
-Snellius. It does not run a persistent API server. The completed 400-run
-closed-loop main study is frozen; the next GPU endpoint is post-run appraisal
-inference over CPU-built evidence packets.
+Snellius. It does not run a persistent API server. The 400-run closed-loop main
+study, post-run appraisals, and matched architecture ablation are complete and
+frozen.
 
 The cognitive layer is disabled by default. Parts 1 and 2 do not import vLLM,
 load a model, or require a GPU environment.
@@ -54,7 +54,7 @@ Reasoning mode remains disabled: the endpoints require concise structured JSON,
 and extra reasoning tokens would increase cost without becoming admissible
 scientific evidence.
 
-## Current execution order
+## Recorded execution order
 
 1. Preserve the accepted closed-loop main result at
    `~/ABM_results/part3_closed_loop_main_n10/`.
@@ -75,23 +75,20 @@ sbatch jobs/snellius_part3_appraisal_preflight_n10.sbatch
 sbatch jobs/snellius_part3_qwen36_appraisals_n10.sbatch
 ```
 
-5. Technical verification is necessary but not sufficient. Complete the
-   prespecified manual grounding/naturalness review before interpreting survey
-   or interview outputs or exporting the persona explorer data.
+5. Complete technical verification and the prespecified grounding and
+   naturalness review before interpreting survey or interview outputs or
+   exporting the persona explorer data.
 
-The optional architecture ablation is prepared with
+The completed architecture ablation was prepared with
 `scripts/build/build_part3_ablation_packets.py`. It is a complete 2 x 2 comparison of
 full versus neutral workplace orientation and retained versus removed grounded
-memory. Building its packets is CPU-only; inference is deferred until the main
-appraisal endpoint passes and remaining GPU budget is known.
+memory. Packet construction is CPU-only.
 
 ## Budget
 
-The original 3,000 GPU-SBU allocation was a planning envelope, not a target to
-spend. Main-study inference is complete. Reserve remaining GPU budget for the
-single appraisal endpoint, a justified repair if verification fails, and only
-then the optional 2 x 2 architecture ablation. Update estimates from observed
-Snellius billing before submission; do not infer cost only from wall time.
+GPU allocations were treated as ceilings rather than spending targets. The
+accepted result packages record actual model revisions, packet inventories,
+and verification outputs; rerunning accepted inference is unnecessary.
 
 All appraisal and ablation packet construction, contract tests, static
 analysis, manual-review templates, and persona-explorer work are CPU/local

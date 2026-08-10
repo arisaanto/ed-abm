@@ -1,6 +1,8 @@
 # Script Guide
 
-The model library lives in `src/`. This directory contains executable research
+The model library lives in `src/`. Its `analysis.py` module contains two
+importable spatial-statistics helpers used by the simulator and empirical
+comparison code. This directory contains executable research
 workflows grouped by what they do:
 
 - `run/`: launch one or more simulations, the bounded Part 3 closed loop, or

@@ -56,11 +56,13 @@ combine scores.
 
 ## Prespecified qualitative analysis
 
-One complete interview per scenario-condition-persona cell is selected
-deterministically for mandatory manual review. Review checks evidence grounding,
-naturalness, score/prose coherence, separation of observation from conjecture,
-and credible tradeoffs for design suggestions. Responses failing these checks
-are not used as illustrative quotations or thematic evidence.
+One complete interview per scenario-condition-persona cell was selected
+deterministically for a prespecified review sample. The intended review checked
+evidence grounding, naturalness, score/prose coherence, separation of
+observation from conjecture, and credible tradeoffs for design suggestions.
+As documented below, the completed study used an independent model-assisted
+audit rather than human review. Responses failing those checks were not used as
+illustrative quotations or thematic evidence.
 
 The analyzer exports a coding template but performs no automated theme
 discovery. Themes are coded only after the grounding review. Reported themes

@@ -71,6 +71,15 @@ Authoritative results: `outputs/findings/part2_parameter_sensitivity_n20/`.
 
 The paired main design contains 2 scenarios x 4 conditions x 10 seeds x 5 persona-assignment rounds = 400 runs. All 400 summaries are present. Technical integrity, persona exposure balance, common exogenous arrival streams, temporal coverage, and sampling coverage passed. The final condition-paired selection retained 100 paired units across all seeds, producing 800 verified survey/interview packets (400 survey and 400 interview packets). The matched prompt-level 2 x 2 architecture ablation used 120 fixed observed opportunities per cell and completed without rerunning the ABM.
 
+A post hoc aggregate questionnaire audit compared role-standardized normal-load
+synthetic ratings with authorized summary statistics from observed staff
+shifts. Across six independently comparable 1–7 items, mean absolute error was
+0.25 points and five means met a prespecified 0.5-point margin. Q2 was reported
+separately because its 25% synthetic mean was partly fixed by construction; Q8
+served as an unsupported-acoustics negative control. The benchmark informed
+audit development, so this is descriptive convergence rather than held-out
+validation.
+
 Personas are preregistered synthetic cognitive orientations with transparent workplace priors. Role is retained as a blocking variable, and every staff id cycles through every persona. Outputs must cite evidence IDs and carry `not_human_data: true`; the optional OCEAN character display is a derived ordinal crosswalk, not psychometric measurement and not a policy input.
 
 Authoritative plan: `docs/PART3_PLAN.md`.
@@ -80,6 +89,7 @@ Authoritative plan: `docs/PART3_PLAN.md`.
 - **Implemented:** Part 1 n100, Part 2 n100, repaired visibility-layer spatial audit, completed-n100 robustness, final two-phase four-factor n20 sensitivity evidence, the Part 3 400-run closed-loop causal study, 800 verified appraisal packets, and the matched 2 x 2 cognitive-architecture ablation.
 - **Completed sensitivity screen:** 960 retained valid original runs plus 320 pressure-threshold replacement runs; final total 1,280.
 - **Completed Part 3 appraisal layer:** 100 condition-paired units, 800 verified packets, prespecified seed-paired fit analysis, reviewed qualitative bundles, and recurrent design-priority coding.
+- **Completed questionnaire bridge:** 390 verified audit packets, correct evidence-withheld and acoustic refusals, and authorized aggregate normal-load convergence results.
 - **Deprecated:** descriptions of Part 2 as an n20/n50 pilot; the n10 +/-20% sensitivity design; seven generic Part 2 plots as the final paper figure set.
 
 ## Do Not Claim

@@ -542,5 +542,36 @@ class PersonaExplorerContracts(unittest.TestCase):
             self.assertTrue(portrait.is_file(), portrait)
 
 
+class PublishedFindingsContracts(unittest.TestCase):
+    def test_questionnaire_convergence_table_is_aggregate_only(self) -> None:
+        path = (
+            ROOT
+            / "outputs"
+            / "findings"
+            / "part3_cognitive_personas_n10"
+            / "tables"
+            / "tableD_questionnaire_convergence.csv"
+        )
+        with path.open(newline="") as handle:
+            rows = list(csv.DictReader(handle))
+
+        self.assertEqual(len(rows), 7)
+        self.assertEqual(
+            set(rows[0]),
+            {
+                "construct",
+                "empirical_mean",
+                "empirical_sd",
+                "synthetic_mean",
+                "synthetic_sd",
+                "absolute_difference",
+                "scale",
+            },
+        )
+        self.assertNotIn("participant_id", rows[0])
+        self.assertEqual(rows[0]["construct"], "Maximum workload")
+        self.assertEqual(rows[-1]["construct"], "Information sufficiency")
+
+
 if __name__ == "__main__":
     unittest.main()

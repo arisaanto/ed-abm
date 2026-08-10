@@ -203,8 +203,11 @@ probes, not observations, staff testimony, discovered preferences, or
 validated psychological measurements. The public first-person answer may read
 naturally, but process language (`ABM`, metrics, logs, evidence ids, or persona
 labels) is forbidden. Automated verification checks schema, citations, and
-obvious leakage; a prespecified human review remains mandatory because fluency
-and credible interpretation cannot be established mechanically.
+obvious leakage. The prespecified review requirement was ultimately completed
+as an independent model-assisted audit by OpenAI Codex rather than by a human
+reviewer. This protocol deviation is disclosed in the appraisal analysis
+protocol and the report; it must not be described as human review or inter-rater
+validation.
 
 ## Architecture Ablation
 

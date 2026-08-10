@@ -11,17 +11,11 @@ BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 OUTPUTS_DIR = BASE_DIR / "outputs"
 PROJECT_ROOT = BASE_DIR.parent
-RESEARCH_OUTPUTS_DIR = PROJECT_ROOT / "outputs"
-ARIS_DIR = BASE_DIR.parent.parent / "ARIS"
 
 WALL_POSITIONS_PATH = DATA_DIR / "wall_positions.json"
 ZONE_BOUNDARIES_PATH = DATA_DIR / "zone_boundaries.json"
-EMPIRICAL_TOPIC_DISTRIBUTIONS_PATH = RESEARCH_OUTPUTS_DIR / "empirical_topic_distributions.json"
-EMPIRICAL_SHADOWING_CSV_PATH = (
-    PROJECT_ROOT / "shadowing_with-participant-info.csv"
-    if (PROJECT_ROOT / "shadowing_with-participant-info.csv").exists()
-    else ARIS_DIR / "shadowing_with-participant-info.csv"
-)
+EMPIRICAL_TOPIC_DISTRIBUTIONS_PATH = OUTPUTS_DIR / "empirical_topic_distributions.json"
+EMPIRICAL_SHADOWING_CSV_PATH = PROJECT_ROOT / "shadowing_with-participant-info.csv"
 LATEST_OUTPUT_DIR = OUTPUTS_DIR / "latest"
 EMPIRICAL_WINDOW_SUMMARY_PATH = LATEST_OUTPUT_DIR / "empirical_window_summary.json"
 
@@ -140,8 +134,7 @@ ROLE_PERMISSIONS = {
     ],
 }
 
-# Realistic clinical durations. These allow for a stable queue of ~5-10
-# patients when paired with the 0.0015 arrival rate.
+# Clinical task durations calibrated with the active arrival process.
 TASK_DURATIONS_SECONDS = {
     PLACEMENT_TASK_NAME: (60, 180),
     INITIAL_NURSING_ASSESSMENT_TASK_NAME: (300, 600),

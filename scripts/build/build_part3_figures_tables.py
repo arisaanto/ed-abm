@@ -67,6 +67,19 @@ DEFAULT_REVIEWED_COUNTERFACTUALS = (
     DEFAULT_REVIEW_DIR / "reviewed_counterfactual_codes.csv"
 )
 
+# Authorized aggregate comparison only. The underlying hospital questionnaire
+# rows remain in the restricted local source data and are never read by this
+# public findings builder.
+QUESTIONNAIRE_CONVERGENCE_ROWS = (
+    ("Maximum workload", 4.57, 1.55, 4.01, 1.88, 0.56, "1-7"),
+    ("Critically high workload", 28.57, 29.18, 25.00, 27.78, 3.57, "percent"),
+    ("Concentration", 5.00, 1.15, 5.17, 1.54, 0.17, "1-7"),
+    ("Communication satisfaction", 4.77, 1.42, 5.08, 0.67, 0.31, "1-7"),
+    ("Teamwork", 5.15, 1.21, 5.03, 0.47, 0.12, "1-7"),
+    ("Helpfulness to patients", 5.15, 0.80, 5.22, 0.67, 0.07, "1-7"),
+    ("Information sufficiency", 5.31, 1.03, 5.04, 0.67, 0.27, "1-7"),
+)
+
 SCENARIOS = ("normal_load", "high_load_high_acuity")
 CONDITIONS = ("baseline", "cockpit_only", "nursta_only", "both")
 INTERVENTIONS = ("cockpit_only", "nursta_only", "both")
@@ -2556,6 +2569,71 @@ def _reviewed_design_suggestions(
     return pd.DataFrame(records)
 
 
+def _write_questionnaire_convergence_table(tables_dir: Path) -> None:
+    columns = (
+        "construct",
+        "empirical_mean",
+        "empirical_sd",
+        "synthetic_mean",
+        "synthetic_sd",
+        "absolute_difference",
+        "scale",
+    )
+    raw = pd.DataFrame(QUESTIONNAIRE_CONVERGENCE_ROWS, columns=columns)
+    base_path = tables_dir / "tableD_questionnaire_convergence"
+    raw.to_csv(base_path.with_suffix(".csv"), index=False, float_format="%.2f")
+
+    display = pd.DataFrame(
+        {
+            "End-of-shift construct": [
+                "Critically high workload (%)"
+                if row.construct == "Critically high workload"
+                else row.construct
+                for row in raw.itertuples(index=False)
+            ],
+            "Empirical mean (SD)": [
+                f"{row.empirical_mean:.2f} ({row.empirical_sd:.2f})"
+                for row in raw.itertuples(index=False)
+            ],
+            "Synthetic mean (SD)": [
+                f"{row.synthetic_mean:.2f} ({row.synthetic_sd:.2f})"
+                for row in raw.itertuples(index=False)
+            ],
+            "Absolute difference": [
+                f"{row.absolute_difference:.2f} pp"
+                if row.scale == "percent"
+                else f"{row.absolute_difference:.2f}"
+                for row in raw.itertuples(index=False)
+            ],
+        }
+    )
+    bold_cells = {
+        (index, "Absolute difference")
+        for index, row in raw.iterrows()
+        if row["scale"] == "1-7" and row["absolute_difference"] <= 0.5
+    }
+    note = (
+        "Empirical n=14 for the two workload items and n=13 for the remaining "
+        "items. Synthetic ratings are role-standardized to the observed three-role "
+        "mixture. Bold differences meet the prespecified half-point margin. The 25% "
+        "synthetic critical-workload mean is partly fixed by construction and is "
+        "excluded from the independent mean-convergence vote. The benchmark informed "
+        "audit development, so this is descriptive aggregate convergence rather than "
+        "held-out or person-level validation."
+    )
+    base_path.with_suffix(".md").write_text(
+        "# Aggregate questionnaire convergence\n\n"
+        + _markdown_table(display, bold_cells=bold_cells)
+        + f"\n*Note.* {note}\n"
+    )
+    base_path.with_suffix(".tex").write_text(
+        _latex_table(display, bold_cells=bold_cells)
+        + "\n\\par\\footnotesize\\textit{Note.} "
+        + _latex_escape(note)
+        + "\n"
+    )
+
+
 def _write_report(output_dir: Path, font_family: str) -> None:
     text = f"""# Part 3 cognitive-persona findings
 
@@ -2571,6 +2649,7 @@ def _write_report(output_dir: Path, font_family: str) -> None:
 - **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one independently audited synthetic response.
 - **TableB — Inclusive-fit effects.** Changes in average fit, fit floor, and between-orientation dispersion for all three interventions.
 - **TableC — Audited synthetic design suggestions.** Independent Codex coding of the 30 grounded counterfactual answers retained from the prespecified 40-bundle audit.
+- **TableD — Aggregate questionnaire convergence.** Role-standardized synthetic end-of-shift ratings compared descriptively with authorized empirical aggregates from the source ED study.
 - **Appendix TableA — Architecture ablation.** Compact matched 2 × 2 persona-conditioning-by-memory results on fixed observed opportunities.
 
 ## Interpretation boundary
@@ -2596,6 +2675,14 @@ grounding and claim-layer criteria. This process retained 184 of 240 answers and
 selected 107 for display. No human interview review or inter-rater reliability
 assessment was performed, and two persona-condition cells have no retained
 qualitative excerpt.
+
+The questionnaire audit provides a separate aggregate calibration check. Five of
+six independently assessed 1–7 means fall within the prespecified half-point
+margin after role standardization. Because the observed benchmark informed audit
+development, this is descriptive convergence, not held-out validation of the
+personas or a person-level prediction claim. The critical-workload item is reported
+for completeness but excluded from that vote because its synthetic mean is partly
+fixed by the audit design.
 
 ## Build
 
@@ -2728,6 +2815,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             ),
         )
 
+        _write_questionnaire_convergence_table(tables_dir)
+
         appendix_a, architecture_effect_note = _table_architecture_ablation_matrix(
             ablation_cells, ablation_effects
         )
@@ -2779,6 +2868,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "tableA_persona_appraisal_profiles",
             "tableB_inclusive_person_space_fit",
             "tableC_recurrent_design_priorities",
+            "tableD_questionnaire_convergence",
             "appendix_tableA_cognitive_architecture_ablation",
         )
         for suffix in ("csv", "md", "tex")
@@ -2799,7 +2889,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "part3_figure_count": 4,
         "explorer_preview_count": 1,
         "cross_study_figure_count": 2,
-        "main_table_count": 3,
+        "main_table_count": 4,
         "appendix_table_count": 1,
         "explorer_result_count": 40,
         "output_dir": str(output_dir),
