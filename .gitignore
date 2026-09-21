@@ -30,7 +30,11 @@ ABM_results/
 
 # Regenerable outputs. Publication-ready aggregate findings are retained.
 outputs/*
-!outputs/README.md
 !outputs/findings/
 !outputs/findings/**
 
+# Participant-derived rate diagnostics are retained locally for auditing.
+outputs/findings/part1_matched_focal_rates_n100/
+
+# Unreported exploratory operational diagnostics remain local.
+outputs/findings/part2_operational_outcomes_n100/

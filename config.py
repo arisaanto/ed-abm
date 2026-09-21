@@ -1,4 +1,4 @@
-"""Central configuration for the validated ED agent-based model.
+"""Central configuration for the empirically informed ED agent-based model.
 
 Active simulation parameters, data paths, task definitions, staff composition,
 spatial constants, and Part 3 inference defaults live here.
@@ -15,7 +15,9 @@ PROJECT_ROOT = BASE_DIR.parent
 WALL_POSITIONS_PATH = DATA_DIR / "wall_positions.json"
 ZONE_BOUNDARIES_PATH = DATA_DIR / "zone_boundaries.json"
 EMPIRICAL_TOPIC_DISTRIBUTIONS_PATH = OUTPUTS_DIR / "empirical_topic_distributions.json"
-EMPIRICAL_SHADOWING_CSV_PATH = PROJECT_ROOT / "shadowing_with-participant-info.csv"
+EMPIRICAL_SHADOWING_CSV_PATH = (
+    PROJECT_ROOT / "source-materials" / "shadowing_with-participant-info.csv"
+)
 LATEST_OUTPUT_DIR = OUTPUTS_DIR / "latest"
 EMPIRICAL_WINDOW_SUMMARY_PATH = LATEST_OUTPUT_DIR / "empirical_window_summary.json"
 
@@ -134,7 +136,7 @@ ROLE_PERMISSIONS = {
     ],
 }
 
-# Clinical task durations calibrated with the active arrival process.
+# Clinical task durations developed iteratively with the active arrival process.
 TASK_DURATIONS_SECONDS = {
     PLACEMENT_TASK_NAME: (60, 180),
     INITIAL_NURSING_ASSESSMENT_TASK_NAME: (300, 600),
@@ -310,7 +312,7 @@ DEFAULT_SCENARIO_MODE = "validated_baseline"
 DEFAULT_SCENARIO_START_HOUR = 0
 SCENARIO_MODES = {
     "validated_baseline": {
-        "description": "Current calibrated care-area baseline used before scenario load separation.",
+        "description": "Current manually developed care-area baseline used before scenario load separation.",
         "arrival_rate_multiplier": 1.0,
         "hourly_arrival_multipliers": [1.0] * 24,
         "esi_arrival_weights": None,
@@ -774,6 +776,13 @@ VLLM_MODEL_NAME = "Qwen/Qwen3.6-35B-A3B"
 VLLM_TENSOR_PARALLEL_SIZE = 1
 VLLM_MAX_MODEL_LEN = 8_192
 VLLM_GPU_MEMORY_UTILIZATION = 0.90
+
+# Grounded Part 3 episodic-memory retrieval weights. These are deliberately
+# equal so that recency, contextual relevance, and recorded importance each
+# contribute without an unvalidated privileged term.
+MEMORY_RECENCY_WEIGHT = 1.0
+MEMORY_IMPORTANCE_WEIGHT = 1.0
+MEMORY_RELEVANCE_WEIGHT = 1.0
 VLLM_MAX_OUTPUT_TOKENS = 512
 VLLM_ENABLE_THINKING = False
 PART3_EPISODE_LOGGING_ENABLED = False

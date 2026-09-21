@@ -71,6 +71,7 @@ DECISION_KEYS = {
     "sampled_for_model",
     "decision_output_contract",
     "free_text_used_as_causal_input",
+    "evolving_state_before",
 }
 MEMORY_SOURCE_EVENT_FIELDS = {
     "source_event_id",
@@ -235,6 +236,28 @@ SPATIAL_EXPERIENCE_KEYS = {
     "generated_interpretation_present",
     "not_human_data",
 }
+EVOLVING_STATE_DIMENSIONS = {
+    "coordination_need",
+    "interruption_strain",
+    "task_continuity",
+    "team_support",
+}
+EVOLVING_STATE_KEYS = {
+    "checkpoint_id",
+    "persona_id",
+    "state",
+    "evidence_by_dimension",
+    "policy_name",
+    "was_fallback",
+    "rejected_reason",
+    "agent_id",
+    "role",
+    "timestep",
+    "window_start",
+    "prior_state",
+    "source_evidence_ids_by_dimension",
+    "model_called",
+}
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -286,6 +309,18 @@ def verify(
     experience_events = _jsonl(run_dir / "part3_experience_events.jsonl")
     spatial_experience = _jsonl(run_dir / "part3_spatial_experience.jsonl")
     closed_loop = summary.get("part3_closed_loop", {})
+    evolving_enabled = closed_loop.get("evolving_state_enabled") is True
+    evolving_state = _jsonl(run_dir / "part3_evolving_state.jsonl")
+    state_inference = _jsonl(
+        run_dir / "part3_state_provider_inference.jsonl"
+    )
+    if evolving_enabled:
+        for name in (
+            "part3_evolving_state.jsonl",
+            "part3_state_provider_inference.jsonl",
+        ):
+            if not (run_dir / name).exists():
+                errors.append(f"Missing required evolving-state file: {name}")
 
     persona_by_agent = {
         int(agent_id): str(persona_id)
@@ -444,6 +479,155 @@ def verify(
         errors.append("No live closed-loop decisions were recorded")
     if provider_errors or int(closed_loop.get("provider_error_count", 0)):
         errors.append("One or more provider errors occurred")
+
+    if evolving_enabled:
+        if closed_loop.get("evolving_state_contract") != "evidence_linked_bounded_state_v1":
+            errors.append("Unexpected evolving-state contract")
+        if closed_loop.get("bounded_evolving_state_used_as_causal_input") is not True:
+            errors.append("Evolving state is enabled but not marked as causal input")
+        if closed_loop.get("generated_reflection_used_as_causal_input") is not False:
+            errors.append("Free-form generated reflection entered the causal path")
+        if int(closed_loop.get("evolving_state_update_count", -1)) != len(evolving_state):
+            errors.append("Evolving-state summary count disagrees with export")
+        malformed_state = []
+        state_rows_by_agent: dict[int, list[dict[str, Any]]] = {}
+        for row in evolving_state:
+            agent_id = int(row.get("agent_id", -1))
+            state_rows_by_agent.setdefault(agent_id, []).append(row)
+            prior = row.get("prior_state", {})
+            state = row.get("state", {})
+            if (
+                set(row) != EVOLVING_STATE_KEYS
+                or set(prior) != EVOLVING_STATE_DIMENSIONS
+                or set(state) != EVOLVING_STATE_DIMENSIONS
+                or set(row.get("evidence_by_dimension", {}))
+                != EVOLVING_STATE_DIMENSIONS
+                or set(row.get("source_evidence_ids_by_dimension", {}))
+                != EVOLVING_STATE_DIMENSIONS
+                or any(
+                    len(set(row["evidence_by_dimension"][name]))
+                    != len(row["evidence_by_dimension"][name])
+                    for name in EVOLVING_STATE_DIMENSIONS
+                )
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or not -2 <= value <= 2
+                    for value in list(prior.values()) + list(state.values())
+                )
+                or any(abs(int(state[name]) - int(prior[name])) > 1 for name in state)
+                or row.get("persona_id") != persona_by_agent.get(agent_id)
+                or int(row.get("window_start", -1)) >= int(row.get("timestep", -1))
+                or (
+                    row.get("model_called") is True
+                    and any(
+                        (
+                            int(state[name]) != int(prior[name])
+                            and not row.get("evidence_by_dimension", {}).get(name)
+                        )
+                        or (
+                            int(state[name]) == int(prior[name])
+                            and row.get("evidence_by_dimension", {}).get(name)
+                        )
+                        for name in EVOLVING_STATE_DIMENSIONS
+                    )
+                )
+                or (
+                    row.get("model_called") is False
+                    and (
+                        any(row.get("evidence_by_dimension", {}).values())
+                        or any(
+                            row.get(
+                                "source_evidence_ids_by_dimension", {}
+                            ).values()
+                        )
+                        or state != prior
+                    )
+                )
+            ):
+                malformed_state.append(str(row.get("checkpoint_id")))
+        if malformed_state:
+            errors.append(f"Malformed evolving-state rows: {malformed_state[:12]}")
+        for agent_id, rows in state_rows_by_agent.items():
+            previous = {name: 0 for name in EVOLVING_STATE_DIMENSIONS}
+            for row in sorted(rows, key=lambda value: int(value["timestep"])):
+                if row["prior_state"] != previous:
+                    errors.append(
+                        f"Broken evolving-state chain for agent {agent_id}"
+                    )
+                    break
+                previous = dict(row["state"])
+        expected_agents = set(persona_by_agent)
+        checkpoint_times = sorted(
+            {int(row["timestep"]) for row in evolving_state}
+        )
+        for timestep in checkpoint_times:
+            covered = {
+                int(row["agent_id"])
+                for row in evolving_state
+                if int(row["timestep"]) == timestep
+            }
+            if covered != expected_agents:
+                errors.append(
+                    f"State checkpoint {timestep} does not cover all agents"
+                )
+        if len(checkpoint_times) != int(
+            closed_loop.get("evolving_state_checkpoint_count", -1)
+        ):
+            errors.append("Evolving-state checkpoint count is inconsistent")
+        model_state_rows = [row for row in evolving_state if row.get("model_called") is True]
+        if len(state_inference) != len(model_state_rows):
+            errors.append("State inference count does not match model state updates")
+        state_inference_by_id = {
+            str(row.get("request", {}).get("checkpoint_id")): row
+            for row in state_inference
+        }
+        if len(state_inference_by_id) != len(state_inference):
+            errors.append("State inference checkpoint ids are missing or duplicated")
+        for row in model_state_rows:
+            checkpoint_id = str(row["checkpoint_id"])
+            inference_row = state_inference_by_id.get(checkpoint_id)
+            if inference_row is None:
+                continue
+            request = inference_row.get("request", {})
+            packet = inference_row.get("packet", {})
+            result = inference_row.get("result", {}).get("response", {})
+            supplied = {
+                str(event.get("evidence_id"))
+                for event in request.get("evidence", [])
+            }
+            if (
+                packet.get("packet_type") != "in_simulation_state_update"
+                or packet.get("state_output_contract")
+                != "evidence_linked_bounded_state_v1"
+                or scientific_packet_prompt_leakage(packet)
+                or result.get("checkpoint_id") != checkpoint_id
+                or result.get("state") != row.get("state")
+                or any(
+                    set(result.get("evidence_by_dimension", {}).get(name, []))
+                    != set(row.get("evidence_by_dimension", {}).get(name, []))
+                    or not set(
+                        row.get("evidence_by_dimension", {}).get(name, [])
+                    ) <= supplied
+                    for name in EVOLVING_STATE_DIMENSIONS
+                )
+                or inference_row.get("free_text_used_as_causal_input") is not False
+            ):
+                errors.append(f"Invalid state inference linkage for {checkpoint_id}")
+        for decision in decisions:
+            agent_id = int(decision.get("agent_id", -1))
+            expected_state = {name: 0 for name in EVOLVING_STATE_DIMENSIONS}
+            for row in sorted(
+                state_rows_by_agent.get(agent_id, []),
+                key=lambda value: int(value["timestep"]),
+            ):
+                if int(row["timestep"]) <= int(decision.get("timestep", -1)):
+                    expected_state = dict(row["state"])
+            if decision.get("evolving_state_before") != expected_state:
+                errors.append(
+                    f"Decision state does not match checkpoint chain: {decision.get('decision_id')}"
+                )
+                break
 
     malformed = [
         row.get("decision_id")

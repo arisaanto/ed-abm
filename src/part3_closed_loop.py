@@ -84,12 +84,59 @@ class CausalDecision:
         return asdict(self)
 
 
+EVOLVING_STATE_DIMENSIONS = (
+    "coordination_need",
+    "interruption_strain",
+    "task_continuity",
+    "team_support",
+)
+EVOLVING_STATE_MIN = -2
+EVOLVING_STATE_MAX = 2
+EVOLVING_STATE_INITIAL = {name: 0 for name in EVOLVING_STATE_DIMENSIONS}
+
+
+@dataclass(frozen=True)
+class EvolvingStateUpdateRequest:
+    checkpoint_id: str
+    persona_id: str
+    agent_id: int
+    role: str
+    timestep: int
+    window_start: int
+    prior_state: Mapping[str, int]
+    evidence: tuple[Mapping[str, Any], ...]
+
+
+@dataclass(frozen=True)
+class EvolvingStateUpdate:
+    checkpoint_id: str
+    persona_id: str
+    state: Mapping[str, int]
+    evidence_by_dimension: Mapping[str, tuple[str, ...]]
+    policy_name: str
+    was_fallback: bool = False
+    rejected_reason: str | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        payload = asdict(self)
+        payload["state"] = dict(self.state)
+        payload["evidence_by_dimension"] = {
+            name: list(values)
+            for name, values in self.evidence_by_dimension.items()
+        }
+        return payload
+
+
 class CausalDecisionProvider(Protocol):
     policy_name: str
 
     def decide_many(
         self, requests: Sequence[CausalDecisionRequest]
     ) -> list[CausalDecision]: ...
+
+    def update_states_many(
+        self, requests: Sequence[EvolvingStateUpdateRequest]
+    ) -> list[EvolvingStateUpdate]: ...
 
 
 class DeterministicMockCausalProvider:
@@ -172,6 +219,48 @@ class DeterministicMockCausalProvider:
             )
         return decisions
 
+    def update_states_many(
+        self, requests: Sequence[EvolvingStateUpdateRequest]
+    ) -> list[EvolvingStateUpdate]:
+        updates = []
+        for request in requests:
+            state = dict(request.prior_state)
+            decisions = [
+                row for row in request.evidence if row.get("event_type") == "persona_decision"
+            ]
+            contacts = [
+                row for row in request.evidence if row.get("event_type") == "realized_interaction"
+            ]
+            def move(name: str, direction: int) -> None:
+                state[name] = max(
+                    EVOLVING_STATE_MIN,
+                    min(EVOLVING_STATE_MAX, int(state[name]) + direction),
+                )
+            if sum(row.get("selected_action") == "decline" for row in decisions) >= 2:
+                move("interruption_strain", 1)
+            if sum(row.get("selected_action") == "defer" for row in decisions) >= 2:
+                move("task_continuity", -1)
+            if contacts:
+                move("team_support", 1)
+                move("coordination_need", -1)
+            updates.append(
+                EvolvingStateUpdate(
+                    checkpoint_id=request.checkpoint_id,
+                    persona_id=request.persona_id,
+                    state=state,
+                    evidence_by_dimension={
+                        name: (
+                            tuple(str(row["evidence_id"]) for row in request.evidence)
+                            if state[name] != request.prior_state[name]
+                            else ()
+                        )
+                        for name in EVOLVING_STATE_DIMENSIONS
+                    },
+                    policy_name=self.policy_name,
+                )
+            )
+        return updates
+
 
 class Part3ClosedLoopController:
     """Validate decisions and expose only grounded experiential memory."""
@@ -188,6 +277,8 @@ class Part3ClosedLoopController:
         max_decisions_per_window: int = 0,
         model_decision_sample_rate: float = 1.0,
         sampling_replication_id: int = 0,
+        evolving_state_enabled: bool = False,
+        evolving_state_interval_seconds: int = 7200,
     ) -> None:
         self.provider = provider
         self.persona_by_agent = {
@@ -207,6 +298,10 @@ class Part3ClosedLoopController:
         self.max_decisions_per_window = max(int(max_decisions_per_window), 0)
         self.model_decision_sample_rate = float(model_decision_sample_rate)
         self.sampling_replication_id = int(sampling_replication_id)
+        self.evolving_state_enabled = bool(evolving_state_enabled)
+        self.evolving_state_interval_seconds = max(
+            int(evolving_state_interval_seconds), 1
+        )
         if not 0.0 < self.model_decision_sample_rate <= 1.0:
             raise ValueError("model_decision_sample_rate must be in (0, 1]")
         if bool(self.decision_window_seconds) != bool(self.max_decisions_per_window):
@@ -216,6 +311,15 @@ class Part3ClosedLoopController:
             )
         self.decision_log: list[dict[str, Any]] = []
         self.provider_error_log: list[dict[str, Any]] = []
+        self.evolving_state_log: list[dict[str, Any]] = []
+        self.evolving_state_by_agent: dict[int, dict[str, int]] = {
+            agent_id: dict(EVOLVING_STATE_INITIAL)
+            for agent_id in self.persona_by_agent
+        }
+        self._last_state_checkpoint = self.start_seconds
+        self._next_state_checkpoint = (
+            self.start_seconds + self.evolving_state_interval_seconds
+        )
         self.memory_exposures_by_agent: dict[
             int, list[dict[str, Any]]
         ] = defaultdict(list)
@@ -237,6 +341,228 @@ class Part3ClosedLoopController:
 
         persona_id = self.persona_by_agent[int(agent_id)]
         return cognitive_persona_by_id()[persona_id].memory_salience_modifiers
+
+    @staticmethod
+    def _state_evidence_id(source: str) -> str:
+        digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+        return f"state-evidence-{digest}"
+
+    def _state_evidence_for_agent(
+        self, simulation: Any, agent_id: int, window_start: int, timestep: int
+    ) -> tuple[Mapping[str, Any], ...]:
+        rows: list[dict[str, Any]] = []
+        stream = simulation.interaction_engine.stream_for(agent_id)
+        for event in stream.events:
+            if not (
+                window_start <= int(event.timestamp) < timestep
+                and event.event_type == "communicative_interaction"
+                and event.outcome == "realized"
+                and event.source_event_id
+            ):
+                continue
+            source = str(event.source_event_id)
+            rows.append(
+                {
+                    "evidence_id": self._state_evidence_id(source),
+                    "source_evidence_id": source,
+                    "event_type": "realized_interaction",
+                    "timestamp": int(event.timestamp),
+                    "colleague_role": event.partner_role,
+                    "interaction_type": event.interaction_type,
+                    "reason_context": event.reason_type,
+                    "topic_family": event.topic,
+                    "zone": event.zone_id,
+                    "owner_was_initiator": bool(event.owner_was_initiator),
+                    "patient_context_present": event.patient_id is not None,
+                }
+            )
+        for decision in self.decision_log:
+            if (
+                int(decision.get("agent_id", -1)) != agent_id
+                or not (window_start <= int(decision.get("timestep", -1)) < timestep)
+                or decision.get("was_fallback") is True
+                or decision.get("sampled_for_model") is not True
+            ):
+                continue
+            source = str(decision["decision_id"])
+            rows.append(
+                {
+                    "evidence_id": self._state_evidence_id(source),
+                    "source_evidence_id": source,
+                    "event_type": "persona_decision",
+                    "timestamp": int(decision["timestep"]),
+                    "selected_action": decision["selected_action"],
+                    "selected_reason": decision["selected_reason"],
+                    "colleague_role": decision.get("partner_role"),
+                    "interaction_type": decision.get("interaction_type"),
+                    "patient_context_present": bool(
+                        decision.get("patient_context_present")
+                    ),
+                }
+            )
+        # Preserve the whole bounded checkpoint window while keeping prompts compact.
+        # Recent events are preferred if an unusually active agent exceeds the cap.
+        rows.sort(key=lambda row: (int(row["timestamp"]), row["evidence_id"]))
+        return tuple(rows[-24:])
+
+    @staticmethod
+    def _state_validation_error(
+        request: EvolvingStateUpdateRequest, update: EvolvingStateUpdate
+    ) -> str | None:
+        if update.checkpoint_id != request.checkpoint_id:
+            return "checkpoint_id_mismatch"
+        if update.persona_id != request.persona_id:
+            return "persona_id_mismatch"
+        if set(update.state) != set(EVOLVING_STATE_DIMENSIONS):
+            return "invalid_state_dimensions"
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, int)
+            or not EVOLVING_STATE_MIN <= value <= EVOLVING_STATE_MAX
+            for value in update.state.values()
+        ):
+            return "state_value_out_of_bounds"
+        if any(
+            abs(int(update.state[name]) - int(request.prior_state[name])) > 1
+            for name in EVOLVING_STATE_DIMENSIONS
+        ):
+            return "state_transition_exceeds_one_step"
+        if set(update.evidence_by_dimension) != set(EVOLVING_STATE_DIMENSIONS):
+            return "invalid_state_evidence_dimensions"
+        allowed = {str(row["evidence_id"]) for row in request.evidence}
+        for name in EVOLVING_STATE_DIMENSIONS:
+            cited_values = tuple(update.evidence_by_dimension[name])
+            cited = set(cited_values)
+            changed = int(update.state[name]) != int(request.prior_state[name])
+            if (
+                len(cited) != len(cited_values)
+                or not cited <= allowed
+                or (changed and not cited)
+                or (not changed and cited)
+            ):
+                return f"invalid_state_evidence_citation:{name}"
+        return None
+
+    def maybe_update_evolving_states(self, simulation: Any) -> None:
+        """Update bounded transient state at fixed, condition-blind checkpoints."""
+
+        if not self.evolving_state_enabled:
+            return
+        timestep = int(simulation.timestep)
+        if timestep < self._next_state_checkpoint:
+            return
+        if timestep != self._next_state_checkpoint:
+            raise RuntimeError(
+                "Simulation skipped a configured Part 3 state checkpoint"
+            )
+        requests: list[EvolvingStateUpdateRequest] = []
+        run_key = self._state_evidence_id(
+            "|".join(
+                (
+                    str(simulation.scenario_mode),
+                    str(simulation.condition_spec.name),
+                    str(simulation.random_seed),
+                    str(self.sampling_replication_id),
+                )
+            )
+        ).removeprefix("state-evidence-")
+        for agent in simulation.staff_agents:
+            agent_id = int(agent.gid)
+            evidence = self._state_evidence_for_agent(
+                simulation, agent_id, self._last_state_checkpoint, timestep
+            )
+            if not evidence:
+                self.evolving_state_log.append(
+                    {
+                        "checkpoint_id": (
+                            f"state:{run_key}:{timestep}:agent:{agent_id}:"
+                            f"{self.persona_by_agent[agent_id]}"
+                        ),
+                        "persona_id": self.persona_by_agent[agent_id],
+                        "agent_id": agent_id,
+                        "role": str(agent.role),
+                        "timestep": timestep,
+                        "window_start": self._last_state_checkpoint,
+                        "prior_state": dict(self.evolving_state_by_agent[agent_id]),
+                        "state": dict(self.evolving_state_by_agent[agent_id]),
+                        "evidence_by_dimension": {
+                            name: [] for name in EVOLVING_STATE_DIMENSIONS
+                        },
+                        "source_evidence_ids_by_dimension": {
+                            name: [] for name in EVOLVING_STATE_DIMENSIONS
+                        },
+                        "policy_name": "deterministic_no_new_evidence",
+                        "was_fallback": False,
+                        "rejected_reason": None,
+                        "model_called": False,
+                    }
+                )
+                self.stats["state_no_evidence_carry_forward"] += 1
+                continue
+            requests.append(
+                EvolvingStateUpdateRequest(
+                    checkpoint_id=(
+                        f"state:{run_key}:{timestep}:agent:{agent_id}:"
+                        f"{self.persona_by_agent[agent_id]}"
+                    ),
+                    persona_id=self.persona_by_agent[agent_id],
+                    agent_id=agent_id,
+                    role=str(agent.role),
+                    timestep=timestep,
+                    window_start=self._last_state_checkpoint,
+                    prior_state=dict(self.evolving_state_by_agent[agent_id]),
+                    evidence=evidence,
+                )
+            )
+        if requests:
+            try:
+                updates = self.provider.update_states_many(requests)
+            except Exception as error:
+                self.provider_error_log.append(
+                    {
+                        "checkpoint_id": f"state_batch:{timestep}",
+                        "timestep": timestep,
+                        "error_type": type(error).__name__,
+                        "error": str(error),
+                    }
+                )
+                self.stats["state_provider_exceptions"] += 1
+                raise
+            if len(updates) != len(requests):
+                raise RuntimeError("State provider returned the wrong cardinality")
+            for request, update in zip(requests, updates):
+                error = self._state_validation_error(request, update)
+                if error is not None:
+                    raise RuntimeError(
+                        f"Invalid evolving-state update {request.checkpoint_id}: {error}"
+                    )
+                prior_state = dict(request.prior_state)
+                new_state = {name: int(update.state[name]) for name in EVOLVING_STATE_DIMENSIONS}
+                self.evolving_state_by_agent[request.agent_id] = new_state
+                source_ids_by_dimension = {}
+                for name in EVOLVING_STATE_DIMENSIONS:
+                    cited = set(update.evidence_by_dimension[name])
+                    source_ids_by_dimension[name] = [
+                        str(row["source_evidence_id"])
+                        for row in request.evidence
+                        if str(row["evidence_id"]) in cited
+                    ]
+                self.evolving_state_log.append(
+                    {
+                        **update.as_dict(),
+                        "agent_id": request.agent_id,
+                        "role": request.role,
+                        "timestep": request.timestep,
+                        "window_start": request.window_start,
+                        "prior_state": prior_state,
+                        "source_evidence_ids_by_dimension": source_ids_by_dimension,
+                        "model_called": True,
+                    }
+                )
+                self.stats["state_provider_calls"] += 1
+        self._last_state_checkpoint = timestep
+        self._next_state_checkpoint += self.evolving_state_interval_seconds
+        self.stats["state_checkpoint_count"] += 1
 
     @staticmethod
     def _validate_grounded_memory(memory_rows: Sequence[Mapping[str, Any]]) -> None:
@@ -337,6 +663,9 @@ class Part3ClosedLoopController:
         memory_state = list(evidence.get("memory_state_before") or [])
         self._validate_grounded_memory(memory_state)
         evidence["memory_state_before"] = memory_state
+        evidence["evolving_state_before"] = dict(
+            self.evolving_state_by_agent[agent_id]
+        )
         bounds = categorical_decision_bounds(evidence)
         request = CausalDecisionRequest(
             decision_id=f"closed-loop:{evidence_id}:{persona_id}",
@@ -440,6 +769,9 @@ class Part3ClosedLoopController:
             "sampled_for_model": sampled_for_model,
             "decision_output_contract": "categorical_causal_v1",
             "free_text_used_as_causal_input": False,
+            "evolving_state_before": dict(
+                self.evolving_state_by_agent[agent_id]
+            ),
         }
         self.decision_log.append(record)
         if not decision.was_fallback:
@@ -473,7 +805,24 @@ class Part3ClosedLoopController:
             ),
             "memory_policy": PART3_GROUNDED_MEMORY_POLICY,
             "decision_history_used_as_memory": False,
+            "decision_history_used_in_bounded_state": self.evolving_state_enabled,
             "generated_reflection_used_as_causal_input": False,
+            "bounded_evolving_state_used_as_causal_input": self.evolving_state_enabled,
+            "evolving_state_enabled": self.evolving_state_enabled,
+            "evolving_state_contract": (
+                "evidence_linked_bounded_state_v1"
+                if self.evolving_state_enabled
+                else None
+            ),
+            "evolving_state_interval_seconds": self.evolving_state_interval_seconds,
+            "evolving_state_checkpoint_count": int(
+                self.stats.get("state_checkpoint_count", 0)
+            ),
+            "evolving_state_update_count": len(self.evolving_state_log),
+            "evolving_state_by_agent": {
+                str(agent_id): dict(state)
+                for agent_id, state in sorted(self.evolving_state_by_agent.items())
+            },
             "stats": dict(sorted(self.stats.items())),
             "free_text_used_as_causal_input": False,
             "start_seconds": self.start_seconds,

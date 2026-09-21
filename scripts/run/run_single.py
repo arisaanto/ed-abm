@@ -85,6 +85,8 @@ INTERACTION_EVENT_FIELDS = (
     "y",
     "zone",
     "zone_group",
+    "agent_a_id",
+    "agent_b_id",
     "role_a",
     "role_b",
     "role_pair",
@@ -292,6 +294,8 @@ def _interaction_event_rows(
                 "y": _csv_float(y_value),
                 "zone": zone,
                 "zone_group": zone_group,
+                "agent_a_id": _event_value(event, "agent_1_id", "agent_1", default=""),
+                "agent_b_id": _event_value(event, "agent_2_id", "agent_2", default=""),
                 "role_a": role_a,
                 "role_b": role_b,
                 "role_pair": _role_pair_label(role_a, role_b),
@@ -1279,6 +1283,142 @@ def _counter_difference(
     }
 
 
+def _analysis_window_snapshot(simulation: Simulation) -> dict[str, Any]:
+    """Capture cumulative outputs at the start of the evaluation window."""
+
+    return {
+        "movement_distance_by_role": dict(simulation.movement_distance_by_role),
+        "zone_dwell_by_role": {
+            str(role): dict(counter)
+            for role, counter in simulation.zone_dwell_by_role.items()
+        },
+        "trip_counts": dict(simulation.trip_counts),
+        "zone_transition_counts": dict(simulation.zone_transition_counts),
+        "trip_path_lengths_by_label": {
+            str(label): len(values)
+            for label, values in simulation.trip_path_lengths_by_label.items()
+        },
+        "trip_durations_by_label": {
+            str(label): len(values)
+            for label, values in simulation.trip_durations_by_label.items()
+        },
+        "mutual_visibility_counts_by_zone": dict(
+            simulation.mutual_visibility_counts_by_zone
+        ),
+        "diagnostics": _jsonable(dict(simulation.ablation_diagnostics)),
+    }
+
+
+def _windowed_movement_metrics(
+    simulation: Simulation, baseline: Mapping[str, Any]
+) -> dict[str, Any]:
+    movement_distance_by_role = _counter_difference(
+        simulation.movement_distance_by_role,
+        baseline.get("movement_distance_by_role", {}),
+    )
+    zone_dwell_by_role: dict[str, dict[str, float]] = {}
+    for role in sorted(
+        set(simulation.zone_dwell_by_role)
+        | set(baseline.get("zone_dwell_by_role", {})),
+        key=str,
+    ):
+        zone_dwell_by_role[str(role)] = _counter_difference(
+            simulation.zone_dwell_by_role.get(role, {}),
+            baseline.get("zone_dwell_by_role", {}).get(str(role), {}),
+        )
+
+    station_occupancy: Counter = Counter()
+    for role_counter in zone_dwell_by_role.values():
+        for station_zone in config.STATION_ZONE_IDS:
+            station_occupancy[station_zone] += float(
+                role_counter.get(station_zone, 0.0)
+            )
+
+    def completed_trip_means(
+        values_by_label: Mapping[str, list[float]],
+        starts: Mapping[str, Any],
+    ) -> dict[str, float]:
+        result: dict[str, float] = {}
+        for label, values in values_by_label.items():
+            start = max(_safe_int(starts.get(str(label), 0)), 0)
+            window_values = [float(value) for value in values[start:]]
+            if window_values:
+                result[str(label)] = sum(window_values) / len(window_values)
+        return result
+
+    return {
+        "measurement_window": "post_warmup",
+        "movement_distance_by_role": movement_distance_by_role,
+        "zone_dwell_by_role": zone_dwell_by_role,
+        "station_occupancy_seconds": dict(station_occupancy),
+        "trip_counts": _counter_difference(
+            simulation.trip_counts, baseline.get("trip_counts", {})
+        ),
+        "zone_transition_counts": _counter_difference(
+            simulation.zone_transition_counts,
+            baseline.get("zone_transition_counts", {}),
+        ),
+        "average_trip_lengths_by_label": completed_trip_means(
+            simulation.trip_path_lengths_by_label,
+            baseline.get("trip_path_lengths_by_label", {}),
+        ),
+        "average_trip_durations_by_label": completed_trip_means(
+            simulation.trip_durations_by_label,
+            baseline.get("trip_durations_by_label", {}),
+        ),
+    }
+
+
+def _windowed_visibility_metrics(
+    simulation: Simulation, baseline: Mapping[str, Any]
+) -> dict[str, Any]:
+    metrics = simulation.visibility_metrics_snapshot()
+    metrics["measurement_window"] = "post_warmup"
+    metrics["mutual_visibility_counts_by_zone"] = _counter_difference(
+        simulation.mutual_visibility_counts_by_zone,
+        baseline.get("mutual_visibility_counts_by_zone", {}),
+    )
+    return metrics
+
+
+def _diagnostic_difference(current: Any, baseline: Any) -> Any:
+    if isinstance(current, Mapping):
+        baseline_mapping = baseline if isinstance(baseline, Mapping) else {}
+        return {
+            str(key): _diagnostic_difference(
+                value, baseline_mapping.get(key, baseline_mapping.get(str(key), 0))
+            )
+            for key, value in current.items()
+        }
+    if isinstance(current, bool):
+        return current
+    if isinstance(current, (int, float)):
+        baseline_value = baseline if isinstance(baseline, (int, float)) else 0
+        return current - baseline_value
+    return current
+
+
+def _windowed_outcome_diagnostics(
+    diagnostics: Mapping[str, Any], baseline: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Difference only cumulative behavioural counters used as outcomes."""
+
+    outcome_keys = set(PERCEPTION_FUNNEL_KEYS)
+    outcome_keys.update(
+        key
+        for key in diagnostics
+        if str(key).startswith(
+            ("high_acuity_preemption_rejection_reason_", "approach_failure_reason_")
+        )
+    )
+    result = dict(diagnostics)
+    for key in outcome_keys:
+        result[key] = _diagnostic_difference(
+            diagnostics.get(key, 0), baseline.get(key, 0)
+        )
+    return result
+
+
 def _part3_agent_experience_rows(
     simulation: Simulation,
     *,
@@ -1513,14 +1653,21 @@ def run_single(
         part3_max_decision_episodes=args.part3_max_episodes,
         part3_episode_logging_start_seconds=args.warmup_seconds,
         part3_isolate_exogenous_arrival_stream=(
-            part3_controller_factory is not None
+            bool(getattr(args, "isolate_exogenous_arrival_stream", False))
+            or part3_controller_factory is not None
         ),
     )
     if part3_controller_factory is not None:
         simulation.part3_cognitive_controller = part3_controller_factory(simulation)
     part3_experience_baseline = None
     part3_experience_recorder: _Part3ExperienceRecorder | None = None
+    analysis_window_baseline = None
     while simulation.timestep < args.duration:
+        if (
+            analysis_window_baseline is None
+            and simulation.timestep >= args.warmup_seconds
+        ):
+            analysis_window_baseline = _analysis_window_snapshot(simulation)
         if (
             simulation.part3_cognitive_controller is not None
             and part3_experience_baseline is None
@@ -1533,6 +1680,8 @@ def run_single(
         simulation.step()
         if part3_experience_recorder is not None:
             part3_experience_recorder.observe(simulation)
+    if analysis_window_baseline is None:
+        analysis_window_baseline = _analysis_window_snapshot(simulation)
     if simulation.part3_cognitive_controller is not None and part3_experience_baseline is None:
         part3_experience_baseline = _part3_experience_snapshot(simulation)
         part3_experience_recorder = _Part3ExperienceRecorder(
@@ -1619,6 +1768,12 @@ def run_single(
         validation_target=args.validation_target,
     )
     run_summary = compute_summary_statistics(evaluation_interactions, simulation)
+    run_summary["movement_metrics"] = _windowed_movement_metrics(
+        simulation, analysis_window_baseline
+    )
+    run_summary["visibility_metrics"] = _windowed_visibility_metrics(
+        simulation, analysis_window_baseline
+    )
     distance_components = compute_distance_components(run_summary, empirical)
     outcome_metrics = compute_outcome_metrics(
         evaluation_interactions, len(missed_opportunities)
@@ -1627,6 +1782,9 @@ def run_single(
         warmup_seconds=args.warmup_seconds
     )
     diagnostics = dict(simulation.ablation_diagnostics)
+    outcome_diagnostics = _windowed_outcome_diagnostics(
+        diagnostics, analysis_window_baseline.get("diagnostics", {})
+    )
     effective_sensitivity_value = _effective_sensitivity_value(
         simulation, sensitivity_metadata
     )
@@ -1651,10 +1809,24 @@ def run_single(
     evaluated_hours = max((args.duration - args.warmup_seconds) / 3600.0, 1e-9)
 
     interaction_count = len(evaluation_interactions)
+    staff_roles = set(config.STAFF_COUNTS)
+    staff_endpoint_count = sum(
+        int(str(_event_value(event, "role_1", "agent_1_role", default="")) in staff_roles)
+        + int(str(_event_value(event, "role_2", "agent_2_role", default="")) in staff_roles)
+        for event in evaluation_interactions
+    )
+    staff_person_hours = len(simulation.staff_agents) * evaluated_hours
     validation_metrics = {
         "interaction_count": interaction_count,
         "evaluated_hours": evaluated_hours,
         "f2f_per_hour": float(interaction_count / evaluated_hours),
+        "staff_interaction_endpoint_count": int(staff_endpoint_count),
+        "staff_person_hours": float(staff_person_hours),
+        "staff_interaction_incidence_per_person_hour": (
+            float(staff_endpoint_count / staff_person_hours)
+            if staff_person_hours > 0
+            else None
+        ),
         "composite_distance": _safe_float(distance_components.get("weighted_total")),
         "kde_component": _safe_float(distance_components.get("kde_component")),
         "zone_component": _safe_float(distance_components.get("zone_component")),
@@ -1884,13 +2056,13 @@ def run_single(
                 simulation.pressure_action_threshold()
             ),
             "pressure_gate_active_evaluation_count": int(
-                diagnostics.get("pressure_gate_active_evaluation_count", 0)
+                outcome_diagnostics.get("pressure_gate_active_evaluation_count", 0)
             ),
             "pressure_suppression_candidate_count": int(
-                diagnostics.get("pressure_suppression_candidate_count", 0)
+                outcome_diagnostics.get("pressure_suppression_candidate_count", 0)
             ),
             "pressure_suppression_block_count": int(
-                diagnostics.get("pressure_suppression_block_count", 0)
+                outcome_diagnostics.get("pressure_suppression_block_count", 0)
             ),
             "pressure_suppression_probability_used": float(
                 simulation.scenario_definition.get(
@@ -1898,10 +2070,14 @@ def run_single(
                 )
             ),
             "pressure_suppression_probability_application_count": int(
-                diagnostics.get("pressure_suppression_probability_application_count", 0)
+                outcome_diagnostics.get(
+                    "pressure_suppression_probability_application_count", 0
+                )
             ),
             "legacy_pressure_suppressed_unrelated_interactions": int(
-                diagnostics.get("pressure_suppressed_unrelated_interactions", 0)
+                outcome_diagnostics.get(
+                    "pressure_suppressed_unrelated_interactions", 0
+                )
             ),
         },
         "scenario_clock": simulation.scenario_clock_metadata(
@@ -1942,13 +2118,13 @@ def run_single(
             "through_vision": visibility_metrics.get("through_vision", {}),
         },
         "perception_reason_funnel_metrics": {
-            **_diagnostic_subset(diagnostics, PERCEPTION_FUNNEL_KEYS),
+            **_diagnostic_subset(outcome_diagnostics, PERCEPTION_FUNNEL_KEYS),
             "high_acuity_preemption_rejection_reasons": _counts_with_prefix(
-                diagnostics,
+                outcome_diagnostics,
                 "high_acuity_preemption_rejection_reason_",
             ),
             "approach_failure_reasons": _counts_with_prefix(
-                diagnostics, "approach_failure_reason_"
+                outcome_diagnostics, "approach_failure_reason_"
             ),
         },
         "movement_dwell_metrics": movement_metrics,
@@ -2032,6 +2208,17 @@ def run_single(
         _write_jsonl(
             output_dir / "part3_provider_inference.jsonl", provider_log
         )
+        _write_jsonl(
+            output_dir / "part3_evolving_state.jsonl",
+            list(getattr(part3_controller, "evolving_state_log", [])),
+        )
+        state_provider_log = list(
+            getattr(part3_controller.provider, "state_inference_log", [])
+        )
+        _write_jsonl(
+            output_dir / "part3_state_provider_inference.jsonl",
+            state_provider_log,
+        )
         part3_interactions = [
             event
             for event in evaluation_interactions
@@ -2073,6 +2260,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--duration", type=int, default=config.SIMULATION_DURATION_SECONDS)
     parser.add_argument("--warmup-seconds", type=int, default=0)
+    parser.add_argument(
+        "--isolate-exogenous-arrival-stream",
+        action="store_true",
+        help=(
+            "Use a scenario-and-seed arrival stream shared across spatial "
+            "conditions. This strengthens paired counterfactual comparisons."
+        ),
+    )
     parser.add_argument("--scenario-start-hour", type=int, default=config.DEFAULT_SCENARIO_START_HOUR)
     parser.add_argument("--validation-target", default="care_area", choices=["care_area", "full_empirical"])
     parser.add_argument("--batch-name", default="manual")

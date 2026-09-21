@@ -255,6 +255,26 @@ def _load_runs(canonical_dir: Path) -> pd.DataFrame:
     for path in sorted(canonical_dir.rglob("summary.json")):
         summary = json.loads(path.read_text())
         metadata = summary.get("metadata", {})
+        evaluated_hours = float(
+            summary.get("validation_metrics", {}).get("evaluated_hours", 0.0)
+        )
+        movement_window = summary.get("movement_dwell_metrics", {}).get(
+            "measurement_window"
+        )
+        visibility_window = summary.get("visibility_metrics", {}).get(
+            "measurement_window"
+        )
+        if (
+            evaluated_hours != 10.0
+            or movement_window != "post_warmup"
+            or visibility_window != "post_warmup"
+        ):
+            raise SystemExit(
+                "Refusing to build Part 2 findings from a mixed or stale analysis "
+                f"window: {path} (evaluated_hours={evaluated_hours}, "
+                f"movement_window={movement_window!r}, "
+                f"visibility_window={visibility_window!r})"
+            )
         row: dict[str, Any] = {
             "scenario": str(metadata.get("scenario_mode", "")),
             "condition": str(metadata.get("condition", "")),
@@ -305,8 +325,15 @@ def _load_runs(canonical_dir: Path) -> pd.DataFrame:
             .values()
         )
         staff_count = int(metadata.get("staff_count", 0))
-        duration_seconds = float(metadata.get("duration_seconds", 0.0))
-        possible_pair_seconds = math.comb(staff_count, 2) * duration_seconds if staff_count > 1 else 0.0
+        evaluation_seconds = (
+            float(summary.get("validation_metrics", {}).get("evaluated_hours", 0.0))
+            * 3600.0
+        )
+        possible_pair_seconds = (
+            math.comb(staff_count, 2) * evaluation_seconds
+            if staff_count > 1
+            else 0.0
+        )
         row["Mutual staff visibility exposure (%)"] = (
             100.0 * visible_pair_samples * float(config.TIMESTEP_SECONDS) / possible_pair_seconds
             if possible_pair_seconds > 0
@@ -334,7 +361,16 @@ def _load_events(canonical_dir: Path) -> tuple[pd.DataFrame, int]:
     paths = sorted(canonical_dir.rglob("interaction_events.csv"))
     for path in paths:
         frame = pd.read_csv(path)
-        scenario, condition, seed = _event_file_metadata(path)
+        path_scenario, path_condition, path_seed = _event_file_metadata(path)
+        # Prefer the run metadata written into the event file. Some archived
+        # batches use a shortened directory label (for example ``high_load``)
+        # while recording the canonical scenario name in every row.
+        if "scenario" not in frame or frame["scenario"].dropna().empty:
+            frame["scenario"] = path_scenario
+        if "condition" not in frame or frame["condition"].dropna().empty:
+            frame["condition"] = path_condition
+        if "seed" not in frame or frame["seed"].dropna().empty:
+            frame["seed"] = path_seed
         if "counted_for_validation" in frame:
             counted = frame["counted_for_validation"]
             if counted.dtype != bool:
@@ -342,13 +378,7 @@ def _load_events(canonical_dir: Path) -> tuple[pd.DataFrame, int]:
             frame = frame[counted]
         frame = frame[pd.to_numeric(frame["x"], errors="coerce").notna()]
         frame = frame[pd.to_numeric(frame["y"], errors="coerce").notna()]
-        frames.append(
-            frame.assign(
-                scenario=scenario,
-                condition=condition,
-                seed=seed,
-            )
-        )
+        frames.append(frame)
     return pd.concat(frames, ignore_index=True), len(paths)
 
 
@@ -1765,7 +1795,7 @@ def _write_table(
     frame: pd.DataFrame,
     base_path: Path,
     *,
-    tex_and_markdown: bool = True,
+    tex_and_markdown: bool = False,
     bold_columns: Sequence[str] = (),
     bold_cells: set[tuple[int, str]] | None = None,
 ) -> None:
@@ -1806,38 +1836,10 @@ def _significant_cells(frame: pd.DataFrame, columns: Sequence[str]) -> set[tuple
 
 
 def _write_vga_table(frame: pd.DataFrame, base_path: Path, metrics: pd.DataFrame) -> None:
-    note = (
-        "VGA-style approximations on a 1.0 m regular grid over the largest connected walkable "
-        "component. Connectivity is the mean count of directly visible grid points. Isovist area "
-        "is the mean 360-degree ray-cast visible area. Visual integration is mean "
-        "normalized closeness centrality on the visibility graph. Visual intelligibility is the "
-        "Pearson correlation between local connectivity and global visual integration across grid "
-        "points. Condition-specific visibility walls are used throughout; these are not formal "
-        "DepthmapX outputs."
-    )
     _write_table(frame, base_path)
-    point_counts = ", ".join(
-        f"{CONDITION_LABELS[row.condition]} n={int(row.sample_points)}"
-        for row in metrics.itertuples(index=False)
-    )
-    markdown = base_path.with_suffix(".md")
-    markdown.write_text(markdown.read_text() + f"\n*Note.* {note} Sample points: {point_counts}.\n")
-    latex = base_path.with_suffix(".tex")
-    latex.write_text(
-        latex.read_text()
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(note + " Sample points: " + point_counts + ".")
-        + "\n"
-    )
 
 
 def _write_effect_table(frame: pd.DataFrame, base_path: Path) -> None:
-    note = (
-        "All effects use paired seeds (n=100 per scenario and contrast). Values in brackets are "
-        "95% confidence intervals for paired mean differences. Effect magnitudes and uncertainty "
-        "are reported in their original units; standardized effects and p-values are intentionally "
-        "not foregrounded. Bold values have 95% confidence intervals that exclude zero."
-    )
     effect_columns = tuple(
         column for column in frame.columns if str(column).endswith("[95% CI]")
     )
@@ -1846,54 +1848,13 @@ def _write_effect_table(frame: pd.DataFrame, base_path: Path) -> None:
         base_path,
         bold_cells=_significant_cells(frame, effect_columns),
     )
-    markdown = base_path.with_suffix(".md")
-    markdown.write_text(markdown.read_text() + f"\n*Note.* {note}\n")
-    latex = base_path.with_suffix(".tex")
-    latex.write_text(
-        latex.read_text()
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(note)
-        + "\n"
-    )
 
 
 def _write_ecology_table(frame: pd.DataFrame, base_path: Path) -> None:
-    note = (
-        "Coordination cost uses validation-counted staff–staff contacts. Interaction "
-        "separation is the mean pairwise Euclidean distance between interaction locations. "
-        "Role–location segregation is equal-count normalized mutual information between role pair "
-        "and broad zone. Mutual staff visibility is the share of all possible staff-pair seconds "
-        "during the complete 12-hour run in which the two staff members could mutually perceive "
-        "one another. The 90% footprint is the share of the largest connected walkable ED grid "
-        "component required to contain 90% of normalized interaction density (0.75 m grid; "
-        "1.125 m Gaussian bandwidth); its change is reported in percentage points relative to the "
-        "same-scenario baseline. Separation and segregation intervals summarize condition-level "
-        "seed variation; footprint change intervals use paired "
-        "seeds. Coordination-nurse participation is the share of validation-counted "
-        "staff–staff contacts involving the coordination nurse."
-    )
     _write_table(frame, base_path)
-    markdown = base_path.with_suffix(".md")
-    markdown.write_text(markdown.read_text() + f"\n*Note.* {note}\n")
-    latex = base_path.with_suffix(".tex")
-    latex.write_text(
-        latex.read_text()
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(note)
-        + "\n"
-    )
 
 
 def _write_role_effect_table(frame: pd.DataFrame, base_path: Path) -> None:
-    note = (
-        "Both minus Baseline, paired by seed (n=100 per scenario). Movement is "
-        "normalized by the fixed role composition: one coordination nurse, three "
-        "doctors, and five nurses. Staff-contact participation counts each staff "
-        "member involved in a validation-counted staff–staff interaction and is "
-        "reported per person across the 10-hour evaluation window. Movement share "
-        "decomposes the total added staff movement; rounding may prevent exact summation "
-        "to 100%. Bold identifies the role contributing the majority of added movement."
-    )
     coordination_rows = frame.index[
         frame["Staff role"].eq("Coordination nurse")
     ].tolist()
@@ -1903,15 +1864,6 @@ def _write_role_effect_table(frame: pd.DataFrame, base_path: Path) -> None:
         for column in ("Staff role", "Added movement share (%)")
     }
     _write_table(frame, base_path, bold_cells=bold_cells)
-    markdown = base_path.with_suffix(".md")
-    markdown.write_text(markdown.read_text() + f"\n*Note.* {note}\n")
-    latex = base_path.with_suffix(".tex")
-    latex.write_text(
-        latex.read_text()
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(note)
-        + "\n"
-    )
 
 
 def _prepare_output_dirs(spatial_dir: Path, sensitivity_dir: Path) -> tuple[Path, Path, Path, Path]:
@@ -1974,23 +1926,6 @@ def build(args: argparse.Namespace) -> None:
                 "Δ zone transitions [95% CI]",
             ),
         ),
-    )
-    movement_note = (
-        "Both scenarios and contrasts use paired seeds (n=100). Values in brackets are "
-        "95% confidence intervals for paired mean differences. Percent change is relative "
-        "to the same-scenario Baseline. Bold values have 95% confidence intervals that "
-        "exclude zero."
-    )
-    movement_base = spatial_tables / "tableA_movement_effects"
-    movement_base.with_suffix(".md").write_text(
-        movement_base.with_suffix(".md").read_text()
-        + f"\n*Note.* {movement_note}\n"
-    )
-    movement_base.with_suffix(".tex").write_text(
-        movement_base.with_suffix(".tex").read_text()
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(movement_note)
-        + "\n"
     )
     _write_vga_table(
         _vga_spatial_table(vga_metrics),

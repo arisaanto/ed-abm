@@ -20,16 +20,16 @@ set -euo pipefail
 
 PROJECT_DIR="${PROJECT_DIR:-${HOME}/ABM/ABM}"
 VENV_DIR="${VENV_DIR:-${HOME}/vllm-env}"
-MAIN_RESULTS_DIR="${MAIN_RESULTS_DIR:-${HOME}/ABM_results/part3_closed_loop_main_n10}"
-APPRAISAL_INPUTS_DIR="${APPRAISAL_INPUTS_DIR:-${HOME}/ABM_results/part3_appraisal_inputs_n10}"
-SCRATCH_DIR="${SCRATCH_DIR:-/scratch-shared/${USER}/abm/part3_qwen36_appraisals_n10_${SLURM_JOB_ID}}"
-RESULTS_DIR="${RESULTS_DIR:-${HOME}/ABM_results/part3_qwen36_appraisals_n10}"
+MAIN_RESULTS_DIR="${MAIN_RESULTS_DIR:-${HOME}/ABM_results/part3_evolving_main_n10}"
+APPRAISAL_INPUTS_DIR="${APPRAISAL_INPUTS_DIR:-${HOME}/ABM_results/part3_evolving_appraisal_inputs_n10}"
+SCRATCH_DIR="${SCRATCH_DIR:-/scratch-shared/${USER}/abm/part3_evolving_qwen36_appraisals_n10_${SLURM_JOB_ID}}"
+RESULTS_DIR="${RESULTS_DIR:-${HOME}/ABM_results/part3_evolving_qwen36_appraisals_n10}"
 HF_HOME="${HF_HOME:-/scratch-shared/${USER}/huggingface}"
 PYTHON_MODULE="${PYTHON_MODULE:-Python/3.11.3-GCCcore-12.3.0}"
 CUDA_MODULE="${CUDA_MODULE:-}"
 MODEL_ID="${MODEL_ID:-Qwen/Qwen3.6-35B-A3B}"
 MODEL_CACHE_DIR="${HF_HOME}/hub/models--Qwen--Qwen3.6-35B-A3B"
-MODEL_REVISION="${MODEL_REVISION:-}"
+MODEL_REVISION="${MODEL_REVISION:-995ad96eacd98c81ed38be0c5b274b04031597b0}"
 RESUME_FROM="${RESUME_FROM:-}"
 SEMANTIC_RETRIES="${SEMANTIC_RETRIES:-}"
 if [[ -z "${SEMANTIC_RETRIES}" ]]; then
@@ -68,7 +68,7 @@ sync_results() {
 }
 trap sync_results EXIT
 
-if [[ ! -f "${MAIN_RESULTS_DIR}/integrity_check.json" ]]; then
+if [[ ! -f "${MAIN_RESULTS_DIR}/evolving_main_integrity.json" ]]; then
   echo "Missing completed main-study integrity file: ${MAIN_RESULTS_DIR}" >&2
   exit 2
 fi
@@ -89,12 +89,13 @@ if find "${RESULTS_DIR}" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
   exit 2
 fi
 
-python3 - "${MAIN_RESULTS_DIR}/integrity_check.json" <<'PY'
+python3 - "${MAIN_RESULTS_DIR}/evolving_main_integrity.json" <<'PY'
 import json
 from pathlib import Path
 import sys
 
-result = json.loads(Path(sys.argv[1]).read_text())
+outer = json.loads(Path(sys.argv[1]).read_text())
+result = outer.get("base_verification") or outer
 required = (
     "verification_pass",
     "technical_integrity_pass",
@@ -107,13 +108,17 @@ required = (
     "scientific_result",
 )
 failed = [key for key in required if result.get(key) is not True]
-if failed or result.get("observed_summary_count") != 400:
+if (
+    failed
+    or result.get("observed_summary_count") != 400
+    or outer.get("verification_pass") is not True
+):
     raise SystemExit(
         "Main study is not eligible for appraisal generation: " + ", ".join(failed)
     )
 print("Accepted complete 400-run main study for post-run appraisals")
 PY
-cp "${MAIN_RESULTS_DIR}/integrity_check.json" "${SCRATCH_DIR}/accepted_main_integrity.json"
+cp "${MAIN_RESULTS_DIR}/evolving_main_integrity.json" "${SCRATCH_DIR}/accepted_main_integrity.json"
 if [[ -z "${RESUME_FROM}" ]]; then
   (
     cd "${PROJECT_DIR}"
@@ -151,6 +156,7 @@ if (
     or experience_audit.get("redundant_travel_wording_shift_count") != 0
     or experience_audit.get("uninformative_travel_shift_count") != 0
     or experience_audit.get("internal_label_shift_count") != 0
+    or experience_audit.get("incomplete_accumulated_experience_shift_count") != 0
     or result.get("maximum_estimated_tokens", 99999) + 4096 > 12288
 ):
     raise SystemExit("Balanced appraisal packet preflight did not pass")

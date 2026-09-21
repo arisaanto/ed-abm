@@ -49,7 +49,10 @@ def scientific_packet_prompt_leakage(packet: Mapping[str, Any]) -> list[str]:
     """Return evaluator-only terms exposed by a scientific decision prompt."""
 
     if (
-        packet.get("packet_type") != "in_simulation_decision"
+        packet.get("packet_type") not in {
+            "in_simulation_decision",
+            "in_simulation_state_update",
+        }
         or packet.get("fixture_only_not_scientific_data") is not False
     ):
         return []
@@ -65,7 +68,16 @@ def scientific_packet_prompt_leakage(packet: Mapping[str, Any]) -> list[str]:
         sort_keys=True,
     )
     searchable = f"{prompt_text}\n{visible_evidence}\n{model_identifiers}"
-    leakage = [term for term in EVALUATOR_ONLY_PROMPT_TERMS if term in searchable]
+    prohibited_terms = EVALUATOR_ONLY_PROMPT_TERMS
+    if packet.get("packet_type") == "in_simulation_state_update":
+        # Prior persona decisions are legitimate evidence for an evolving state;
+        # rule/comparator and experimental-cell labels remain hidden.
+        prohibited_terms = tuple(
+            term
+            for term in EVALUATOR_ONLY_PROMPT_TERMS
+            if term != 'selected_action":'
+        )
+    leakage = [term for term in prohibited_terms if term in searchable]
     trace = packet.get("trace_evidence", {})
     source_evidence_id = str(trace.get("evidence_id", ""))
     if source_evidence_id and source_evidence_id in searchable:
@@ -112,6 +124,11 @@ def packet_json_schema(packet_type: str, packet: Optional[Mapping[str, Any]] = N
     """Return an executable JSON schema matching the consolidated Part 3 schemas."""
 
     packet = packet or {}
+    if packet_type == "empirical_questionnaire_bundle":
+        from src.questionnaire_audit import questionnaire_json_schema
+
+        return questionnaire_json_schema(packet)
+
     allowed_evidence = [str(value) for value in packet.get("evidence_ids", [])]
     evidence_items: dict[str, Any] = {"type": "string"}
     if allowed_evidence:
@@ -335,6 +352,66 @@ def packet_json_schema(packet_type: str, packet: Optional[Mapping[str, Any]] = N
             }
         return _object_schema(properties, properties)
 
+    if packet_type == "in_simulation_state_update":
+        checkpoint_schema: dict[str, Any] = {"type": "string", "minLength": 1}
+        if packet.get("prompt_id"):
+            checkpoint_schema["const"] = str(packet["prompt_id"])
+        state_dimensions = (
+            "coordination_need",
+            "interruption_strain",
+            "task_continuity",
+            "team_support",
+        )
+        prior_state = packet.get("llm_visible_evidence", {}).get(
+            "prior_state", {}
+        )
+        state_properties = {}
+        for name in state_dimensions:
+            prior_value = (
+                prior_state.get(name)
+                if isinstance(prior_state, Mapping)
+                else None
+            )
+            if (
+                isinstance(prior_value, int)
+                and not isinstance(prior_value, bool)
+                and -2 <= prior_value <= 2
+            ):
+                state_properties[name] = {
+                    "type": "integer",
+                    "minimum": max(-2, prior_value - 1),
+                    "maximum": min(2, prior_value + 1),
+                }
+            else:
+                # The normalizer rejects a missing or malformed prior state.
+                # Keep schema construction total so diagnostics can reach it.
+                state_properties[name] = {
+                    "type": "integer",
+                    "minimum": -2,
+                    "maximum": 2,
+                }
+        dimension_evidence_array = dict(evidence_array)
+        dimension_evidence_array.pop("minItems", None)
+        dimension_evidence_array["minItems"] = 0
+        # One grounded event is sufficient to justify a one-step change.  Do
+        # not let constrained decoding enumerate the full (up to 24-event)
+        # window separately for all four dimensions: that adds no evidence
+        # value and can exhaust the bounded generation before JSON closes.
+        dimension_evidence_array["maxItems"] = 1 if allowed_evidence else 0
+        evidence_by_dimension_properties = {
+            name: dimension_evidence_array
+            for name in state_properties
+        }
+        properties = {
+            "checkpoint_id": checkpoint_schema,
+            "state": _object_schema(state_properties, state_properties),
+            "evidence_by_dimension": _object_schema(
+                evidence_by_dimension_properties,
+                evidence_by_dimension_properties,
+            ),
+        }
+        return _object_schema(properties, properties)
+
     properties = {
         "answer": {"type": "string"},
         "evidence_event_ids": evidence_array,
@@ -360,6 +437,10 @@ class VLLMOfflineBackend:
         language_model_only: bool = True,
         enable_prefix_caching: bool = True,
         safetensors_load_strategy: str | None = "eager",
+        disable_custom_all_reduce: bool = False,
+        gdn_prefill_backend: str | None = None,
+        enforce_eager: bool = False,
+        disable_fused_allreduce_rms: bool = False,
         max_semantic_retries: int = 2,
     ) -> None:
         self.model = model or config.VLLM_MODEL_NAME
@@ -382,6 +463,10 @@ class VLLMOfflineBackend:
         self.language_model_only = bool(language_model_only)
         self.enable_prefix_caching = bool(enable_prefix_caching)
         self.safetensors_load_strategy = safetensors_load_strategy
+        self.disable_custom_all_reduce = bool(disable_custom_all_reduce)
+        self.gdn_prefill_backend = gdn_prefill_backend
+        self.enforce_eager = bool(enforce_eager)
+        self.disable_fused_allreduce_rms = bool(disable_fused_allreduce_rms)
         self.max_semantic_retries = max(0, int(max_semantic_retries))
         self._engine = None
         self.engine_load_seconds: float | None = None
@@ -403,11 +488,19 @@ class VLLMOfflineBackend:
                 "trust_remote_code": False,
                 "dtype": "auto",
                 "enable_prefix_caching": self.enable_prefix_caching,
+                "disable_custom_all_reduce": self.disable_custom_all_reduce,
+                "enforce_eager": self.enforce_eager,
             }
+            if self.disable_fused_allreduce_rms:
+                engine_options["compilation_config"] = {
+                    "pass_config": {"fuse_allreduce_rms": False}
+                }
             if self.safetensors_load_strategy:
                 engine_options["safetensors_load_strategy"] = (
                     self.safetensors_load_strategy
                 )
+            if self.gdn_prefill_backend:
+                engine_options["gdn_prefill_backend"] = self.gdn_prefill_backend
             if self.model_revision:
                 # Pin both weights and tokenizer to the same immutable Hub
                 # commit for reproducible scientific runs.
@@ -487,10 +580,14 @@ class VLLMOfflineBackend:
                         "The previous JSON object failed a strict semantic check: "
                         f"{error}. Return the complete corrected JSON object only. "
                         "Keep every claim grounded in the supplied evidence. Public "
-                        "interview answers and survey rationales must be concise, "
-                        "complete plain-English sentences (about 60 words or fewer), "
-                        "with no event IDs, study-process language, or persona labels. "
-                        "Keep analytic fields compact and put citations in their "
+                        "survey rationales must contain no more than 35 words, and "
+                        "public interview answers no more than 45 words. End every "
+                        "public field with punctuation. Use natural workplace language "
+                        "and never write event IDs or the words log, logged, metric, "
+                        "metrics, data point, evidence ID, ABM, prompt, persona, "
+                        "archetype, profile, model output, or orientation in public "
+                        "prose. Do not describe the response-writing process. Keep "
+                        "each analytic field to 30 words or fewer and put citations in its "
                         "dedicated evidence_event_ids arrays. For an interview bundle, only the "
                         "counterfactual_change answer may contain a design_hypothesis "
                         "and tradeoff; both are required there and both must be null "
@@ -537,6 +634,11 @@ class VLLMOfflineBackend:
         user_model_id = str(profile.get("persona_id") or profile.get("user_model_id") or "")
         condition = str(metadata.get("condition") or "")
         scenario_mode = str(metadata.get("scenario_mode") or "")
+
+        if packet_type == "empirical_questionnaire_bundle":
+            from src.questionnaire_audit import normalize_questionnaire_response
+
+            return normalize_questionnaire_response(packet, payload)
 
         if packet_type == "end_of_shift_survey":
             from src.interviews import SurveyResponse
@@ -854,6 +956,83 @@ class VLLMOfflineBackend:
                 }
             )
             return normalized
+
+        if packet_type == "in_simulation_state_update":
+            checkpoint_id = str(payload.get("checkpoint_id", ""))
+            expected_id = str(packet.get("prompt_id", ""))
+            if checkpoint_id != expected_id:
+                raise ValueError(
+                    f"Checkpoint ID {checkpoint_id!r} does not match {expected_id!r}"
+                )
+            state = payload.get("state")
+            dimensions = {
+                "coordination_need",
+                "interruption_strain",
+                "task_continuity",
+                "team_support",
+            }
+            if not isinstance(state, Mapping) or set(state) != dimensions:
+                raise ValueError("State update has invalid dimensions")
+            normalized_state = {}
+            for name in sorted(dimensions):
+                value = state[name]
+                if isinstance(value, bool) or not isinstance(value, int) or not -2 <= value <= 2:
+                    raise ValueError(f"State value outside -2..2: {name}={value!r}")
+                normalized_state[name] = value
+            evidence_by_dimension = payload.get("evidence_by_dimension")
+            if (
+                not isinstance(evidence_by_dimension, Mapping)
+                or set(evidence_by_dimension) != dimensions
+            ):
+                raise ValueError("State update has invalid evidence dimensions")
+            normalized_evidence = {
+                name: self._validated_evidence_ids(
+                    {"values": evidence_by_dimension[name]},
+                    packet,
+                    "values",
+                    require_one=False,
+                )
+                for name in sorted(dimensions)
+            }
+            prior_state = (
+                packet.get("llm_visible_evidence", {}).get("prior_state", {})
+            )
+            if not isinstance(prior_state, Mapping) or set(prior_state) != dimensions:
+                raise ValueError("State packet has invalid prior-state dimensions")
+            for name in sorted(dimensions):
+                prior_value = prior_state[name]
+                if (
+                    isinstance(prior_value, bool)
+                    or not isinstance(prior_value, int)
+                    or not -2 <= prior_value <= 2
+                ):
+                    raise ValueError(
+                        f"Prior state value outside -2..2: {name}={prior_value!r}"
+                    )
+                changed = normalized_state[name] != prior_value
+                if abs(normalized_state[name] - prior_value) > 1:
+                    raise ValueError(
+                        f"State dimension {name} may move by at most one step "
+                        f"from {prior_value}, received {normalized_state[name]}"
+                    )
+                if changed and not normalized_evidence[name]:
+                    raise ValueError(
+                        f"Changed state dimension {name} requires one evidence id"
+                    )
+                if not changed and normalized_evidence[name]:
+                    # A citation attached to a stable dimension is a harmless
+                    # over-completion of the output contract.  Discarding it is
+                    # conservative: the state does not move, no unsupported
+                    # transition is created, and ``raw_response`` retains the
+                    # model's original payload for audit.  Substantive failures
+                    # (unsupported changes or jumps larger than one step) remain
+                    # strict errors above.
+                    normalized_evidence[name] = []
+            return {
+                "checkpoint_id": checkpoint_id,
+                "state": normalized_state,
+                "evidence_by_dimension": normalized_evidence,
+            }
 
         return {
             "answer": str(payload.get("answer", "")),

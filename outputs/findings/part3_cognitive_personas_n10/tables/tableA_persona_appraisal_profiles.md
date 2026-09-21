@@ -1,9 +1,0 @@
-| Orientation | Overall fit | Coordination | Focus | Legibility | Representative grounded response |
-| --- | --- | --- | --- | --- | --- |
-| **Team Connector** | **4.4 → 5.1 (+0.7)** | 3.9 → 4.5 (+0.6) | 4.0 → 4.3 (+0.3) | 4.8 → 5.8 (+1.0) | I would add a semi-private, acoustically dampened huddle space near the shared circulation area, adjacent to the COCPIT station. |
-| **Focus Protector** | **5.8 → 5.8 (+0.0)** | 3.7 → 4.2 (+0.5) | 5.7 → 5.7 (+0.0) | 5.0 → 5.8 (+0.8) | I would introduce a visual status indicator at the entrance of the right patient rooms, showing whether a nurse is in focus or available mode. |
-| **Patient Advocate** | **4.0 → 4.4 (+0.4)** | 3.3 → 3.8 (+0.5) | 3.7 → 3.8 (+0.1) | 5.1 → 5.7 (+0.6) | The COCPIT station offers substantial colleague visibility, which aids coordination, but the need to travel to patient rooms for tasks like assessments and diagnostics breaks my focus. |
-| **Vigilant Monitor** | **3.9 → 4.5 (+0.6)** | 3.4 → 3.4 (+0.0) | 3.7 → 3.7 (+0.0) | 5.0 → 5.4 (+0.4) | I would introduce a semi-transparent partition or visual barrier in the corridor near the COCPIT entrance to create a soft coordination zone. |
-| **Adaptive Generalist** | **4.0 → 4.6 (+0.6)** | 3.3 → 3.5 (+0.2) | 3.6 → 3.9 (+0.3) | 5.0 → 5.7 (+0.7) | Adding a dedicated, semi-private huddle space near the right patient-room area would support better coordination without requiring full relocation to the COCPIT station. |
-
-*Note.* High load; each score is Baseline → Both (change) on a 1–7 scale, averaged across 10 paired seeds. The response was retained from the prespecified high-load/Both bundle after an independent Codex grounding and claim-layer audit. These are designed-orientation appraisals and synthetic responses, not Zurich ED staff testimony or human-coded interviews.

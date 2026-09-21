@@ -1144,6 +1144,8 @@ class Simulation:
         self._log_task_transition_updates()
         self._finalize_completed_tasks()
         self.timestep += config.TIMESTEP_SECONDS
+        if self.part3_cognitive_controller is not None:
+            self.part3_cognitive_controller.maybe_update_evolving_states(self)
         if self.timestep % config.PATIENT_STATE_SWEEP_INTERVAL_SECONDS == 0:
             self._repair_state_inconsistencies()
 

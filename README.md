@@ -1,10 +1,9 @@
 # Spatially Explicit ED Interaction Model
 
 A workflow-constrained, spatially embodied agent-based model of face-to-face
-interaction in an emergency department. The study validates the model against
+interaction in an emergency department. The study compares the model with
 empirical shadowing data, tests visibility and workstation interventions, and
-examines how five designed cognitive orientations take up the resulting spatial
-affordances.
+examines how five designed personas take up the resulting spatial affordances.
 
 ![Study design: validate, intervene, and interpret](outputs/findings/study_overview/figures/study_design_overview.png)
 
@@ -12,18 +11,20 @@ affordances.
 
 | Part | Question | Design |
 |---|---|---|
-| 1. Validate | Does the model reproduce the observed interaction ecology? | Empirical comparison and negative controls across `100` runs |
+| 1. Compare | Which observed interaction patterns does the baseline reproduce? | Empirical comparison and spatial negative controls across `100` runs |
 | 2. Intervene | What changes when spatial design features change? | Four spatial conditions, two operating scenarios, `800` paired runs, and a four-factor sensitivity screen |
-| 3. Interpret | Who takes up the new affordances, and how? | Five cognitive orientations balanced across role, condition, scenario, and assignment round in `400` closed-loop runs, followed by synthetic appraisals and a matched architecture ablation |
+| 3. Interpret | Who takes up the new affordances, and how? | Five personas balanced across role, condition, scenario, and assignment round in `400` runs, followed by synthetic appraisals and an accumulated-experience check |
 
-Part 1 produced `22.14` simulated face-to-face interactions per hour against an
-empirical target of `22.78`, with `100/100` workflow passes and clean hard
-gates. Part 2 completed `800/800` workflow-clean runs. Part 3 completed
-`400/400` runs with balanced orientation exposure, isolated exogenous arrival
-streams, temporal and sampling coverage, and clean technical-integrity gates.
-In a post hoc bridge to observed staff experience, six comparable normal-load
-synthetic questionnaire means were `0.25` scale points from the observed means
-on average; five met the prespecified half-point margin.
+Part 1 recovered the broad observed hotspot structure, although its matched
+focal interaction rate was lower than the observed rate (`5.92` versus `29.04`
+events per focal-person-hour). Part 2 completed `800/800` workflow-clean,
+paired runs. Part 3 completed `400/400` balanced runs; the five personas had
+similar gains in colleague visibility but differed in additional
+persona-initiated contact, decisions under identical situations, and
+post-shift appraisals. In a preliminary bridge to
+observed staff experience, six comparable normal-load synthetic questionnaire
+means differed from the observed means by `0.23` scale points on average;
+their full response distributions did not meet the prespecified convergence gate.
 
 ## Model Boundary
 
@@ -33,7 +34,7 @@ and 2 never use an LLM. Part 3 is opt-in: Qwen may choose among feasible
 discretionary interaction actions supplied by the ABM, but it cannot invent
 movement, patients, partners, or events.
 
-The five Part 3 personas are preregistered synthetic workplace orientations,
+The five Part 3 personas are predefined synthetic workplace profiles,
 not discovered or validated personality types. Their OCEAN profiles are
 illustrative display labels and are never causal model inputs. Synthetic
 appraisals are design probes, not testimony from Zurich ED staff.
@@ -47,13 +48,13 @@ scripts/
   validation/ preflight and result-verification commands
   analysis/   scientific post-processing
   build/      manifests, packets, figures, tables, and web-data builders
-jobs/         final Snellius batch definitions retained for reproducibility
+jobs/         Snellius execution and preflight definitions
 manifests/    paired experiment manifests and source-integrity lock
 data/         non-participant geometry inputs
 docs/         architecture, completed-study protocols, and analysis plans
 tests/        compact study-contract and publication-artifact regression suite
 outputs/
-  findings/   publication-ready aggregate figures, tables, and reports
+  findings/   publication-ready aggregate figures and machine-readable tables
 web/
   persona-explorer/  interactive Part 3 results interface
 ```
@@ -93,7 +94,6 @@ python3 -m py_compile \
   config.py main.py src/*.py scripts/*/*.py tests/*.py
 python3 -m unittest discover -s tests -p 'test_*.py' -v
 find jobs -maxdepth 1 -name '*.sbatch' -print -exec bash -n {} \;
-shasum -a 256 -c manifests/part3_current_source.sha256
 ```
 
 Result-level verification commands live in `scripts/validation/` and require
@@ -104,25 +104,25 @@ development.
 ## Results
 
 - [Study overview and interaction pipeline](outputs/findings/study_overview/)
-- [Part 1 validation report](outputs/findings/part1_validation_n100/part1_validation_n100_report.md)
+- [Part 1 validation findings](outputs/findings/part1_validation_n100/)
 - [Part 2 intervention findings](outputs/findings/part2_spatial_interventions_n100/)
 - [Part 2 sensitivity findings](outputs/findings/part2_parameter_sensitivity_n20/)
-- [Part 3 cognitive-orientation findings](outputs/findings/part3_cognitive_personas_n10/)
-- [Part 3 questionnaire-convergence table](outputs/findings/part3_cognitive_personas_n10/tables/tableD_questionnaire_convergence.md)
+- [Part 3 persona findings](outputs/findings/part3_cognitive_personas_n10/)
+- [Part 3 questionnaire-convergence table](outputs/findings/part3_cognitive_personas_n10/tables/tableD_questionnaire_convergence.csv)
 - [Interactive persona explorer](https://arisaanto.github.io/ed-abm/)
 - [Persona explorer source](web/persona-explorer/)
 
 Figures are retained as publication-ready PDF and review-friendly PNG files.
-Tables are retained as LaTeX for the manuscript, CSV for analysis, and
-Markdown for repository review.
+Aggregate tables are retained once as machine-readable CSV files; the
+manuscript owns its typeset table copies.
 
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Project and experiment status](docs/EXPERIMENT_PLAN.md)
 - [Part 2 intervention protocol](docs/PART2_SPATIAL_INTERVENTIONS_PROTOCOL.md)
-- [Part 3 protocol](docs/PART3_PLAN.md)
-- [Part 3 appraisal analysis plan](docs/PART3_APPRAISAL_ANALYSIS_PROTOCOL.md)
+- [Part 3 development history and protocol](docs/PART3_PLAN.md)
+- [Part 3 appraisal protocol](docs/PART3_APPRAISAL_ANALYSIS_PROTOCOL.md)
+- [Part 3 GPU backend setup](docs/PART3_LLM_BACKEND_SETUP.md)
 
 ## Data Availability
 
@@ -137,7 +137,7 @@ subject to the source study's approval and data-management conditions.
 The results do not establish clinical outcomes, a universally optimal ED
 layout, real staff experience, validated personality types, or transfer to
 other sites without recalibration. Part 3 estimates responses within this
-model and its prespecified synthetic orientations.
+model and its predefined personas.
 
 ## Citation
 

@@ -84,6 +84,15 @@ def _declared_design(
         if expected_seed_count not in (None, 1):
             raise ValueError("Pilot design requires exactly one seed")
         return {"baseline", "both"}, {1}, "one_seed_closed_loop_sizing_pilot", False
+    if study_design == "evolving_pilot":
+        if expected_seed_count not in (None, 1):
+            raise ValueError("Evolving pilot design requires exactly one seed")
+        return (
+            {"baseline", "cockpit_only", "nursta_only", "both"},
+            {1},
+            "one_seed_evolving_state_full_factorial_pilot",
+            False,
+        )
     if study_design == "main":
         if expected_seed_count is None or expected_seed_count < 2:
             raise ValueError("Main design requires --expected-seed-count >= 2")
@@ -384,6 +393,10 @@ def verify(
                 "model_decision_sample_rate"
             ],
             "sampling_replication_id": row["assignment_round"],
+            "evolving_state_enabled": row["evolving_state_enabled"],
+            "evolving_state_interval_seconds": row[
+                "evolving_state_interval_seconds"
+            ],
         }
         controller_mismatch = {
             key: (closed_loop.get(key), expected)
@@ -828,7 +841,11 @@ def verify(
             technical_integrity_pass and design_complete and temporal_coverage_pass
         ),
         "technical_integrity_pass": technical_integrity_pass,
-        "pilot_design_complete": design_complete if study_design == "pilot" else None,
+        "pilot_design_complete": (
+            design_complete
+            if study_design in {"pilot", "evolving_pilot"}
+            else None
+        ),
         "main_design_complete": design_complete if study_design == "main" else None,
         "study_design_complete": design_complete,
         "temporal_coverage_pass": temporal_coverage_pass,
@@ -1002,7 +1019,7 @@ def main() -> None:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--out-json", required=True)
     parser.add_argument(
-        "--study-design", choices=("pilot", "main"), default="pilot"
+        "--study-design", choices=("pilot", "evolving_pilot", "main"), default="pilot"
     )
     parser.add_argument("--expected-seed-count", type=int)
     args = parser.parse_args()

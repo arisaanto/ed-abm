@@ -1,9 +1,9 @@
-"""Empirical shadowing-data utilities for calibration and validation.
+"""Empirical shadowing-data utilities for model development and checking.
 
 This module turns the observed shadowing CSV into the same summary-statistic
 space used by simulation outputs. It reuses the planning-phase JSON where that
 work already encoded translated topics and role profiles, and combines it with
-the raw interaction coordinates for spatial calibration.
+the raw interaction coordinates for spatial comparison.
 """
 
 from __future__ import annotations
@@ -490,7 +490,7 @@ def compute_empirical_summary(
     environment: Optional[Environment] = None,
     validation_target: str = "care_area",
 ) -> EmpiricalSummary:
-    """Build calibration-ready empirical summary statistics."""
+    """Build empirical summary statistics for model development and checking."""
 
     if validation_target not in VALIDATION_TARGETS:
         raise ValueError(f"validation_target must be one of {sorted(VALIDATION_TARGETS)}")

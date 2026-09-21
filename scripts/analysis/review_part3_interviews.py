@@ -25,10 +25,10 @@ DEFAULT_SOURCE = (
     PROJECT_DIR
     / "outputs"
     / "source_results"
-    / "part3_appraisals_final_24789077.tar.gz"
+    / "part3_evolving_appraisals_n10"
 )
 DEFAULT_MANIFEST = (
-    PROJECT_DIR / "manifests" / "part3_independent_interview_review.json"
+    PROJECT_DIR / "manifests" / "part3_evolving_independent_interview_review.json"
 )
 DEFAULT_OUTPUT_DIR = (
     PROJECT_DIR

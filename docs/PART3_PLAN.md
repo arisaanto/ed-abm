@@ -1,5 +1,11 @@
 # Part 3: Cognitive Orientations in a Spatially Constrained ED ABM
 
+This file records the design and execution history of an earlier Part 3
+iteration, including a factorial prompt ablation that is not a result in the
+current report. The evolving-experience study, common-situation check, and
+reported experience ablation are identified by their final manifests and
+analysis scripts. Use the final report for the reported methods and results.
+
 ## Status
 
 **The 400-run bounded closed-loop study is complete; LLM behavior remains
@@ -20,8 +26,8 @@ scenarios, four spatial conditions, ten seeds, and five balanced assignment
 rounds. Technical integrity, persona-role exposure, common exogenous arrival
 streams, temporal coverage, and sampling coverage passed. Verified offline
 inference also completed over 800 paired end-of-shift survey and interview
-packets. The matched prompt-level 2 x 2 architecture ablation of persona
-conditioning and grounded memory is complete; it reused accepted main-study
+packets. The matched prompt-level 2 x 2 experience ablation of persona
+conditioning and accumulated experience is complete; it reused accepted main-study
 opportunities and did not rerun the ABM.
 
 ## Research Contribution
@@ -209,15 +215,15 @@ reviewer. This protocol deviation is disclosed in the appraisal analysis
 protocol and the report; it must not be described as human review or inter-rater
 validation.
 
-## Architecture Ablation
+## Experience Ablation
 
-The primary factorial comparison separates persona conditioning and grounded
-memory in four LLM cells:
+The primary factorial comparison separates persona conditioning and
+accumulated experience in four LLM cells:
 
-1. neutral orientation without memory;
-2. neutral orientation with memory;
-3. persona-conditioned LLM without memory;
-4. persona-conditioned LLM with memory.
+1. common decision priors without accumulated experience;
+2. common decision priors with accumulated experience;
+3. persona-specific priors without accumulated experience;
+4. persona-specific priors with accumulated experience.
 
 The existing rule action is retained as a separate descriptive comparator. It
 is not a factorial cell because the rule policy contains neither the same
@@ -240,11 +246,11 @@ outcomes are:
 Empirical topic similarity is a secondary plausibility boundary: an LLM should
 not improve semantic resemblance by violating feasibility or fabricating facts.
 
-The executable ablation uses 120 balanced, memory-bearing opportunities (two
-scenarios x four conditions x five source personas x three roles). All four
-factorial cells are generated in the same inference run: full-persona/full-memory,
-neutral-orientation/full-memory, full-persona/no-memory, and
-neutral-orientation/no-memory. This produces 480 Qwen packets and 120 complete
+The executable ablation uses 120 balanced opportunities with accumulated
+experience (two scenarios x four conditions x five source personas x three
+roles). All four factorial cells are generated in the same inference run:
+persona-specific or common decision priors, each with or without accumulated
+experience. This produces 480 Qwen packets and 120 complete
 matched 2 x 2 sets. The accepted main-study full-persona/full-memory response
 is retained only as an external reproducibility reference. This estimates
 prompt-level component substitution effects on fixed opportunities. It is not a second
@@ -253,11 +259,11 @@ effects of removing memory. Source selection is also balanced at 12
 opportunities per seed; estimates are equal-weighted across the 120 design
 strata rather than frequency-weighted to the natural opportunity ecology.
 
-Before any GPU use, run
-`jobs/snellius_part3_architecture_ablation_preflight.sbatch`. The GPU job
-`jobs/snellius_part3_qwen36_architecture_ablation.sbatch` refuses unbalanced
-packets, prompt leakage, mixed model revisions, thinking-enabled source data,
-or a model revision different from the accepted main study.
+The completed packet set was built with
+`scripts/build/build_part3_ablation_packets.py`, verified with
+`scripts/validation/verify_part3_vllm_responses.py`, and analysed with
+`scripts/analysis/analyze_part3_architecture_ablation.py`. The retained scripts
+reject unbalanced packets, prompt leakage, and mixed model revisions.
 
 ## Analysis Contract
 
@@ -531,26 +537,30 @@ conditioning and grounded memory on fixed observed opportunities.
 Two matched, post-run packet substitutions were crossed in a 2 x 2 design
 without rerunning the ABM:
 
-- **Neutral orientation:** replace the five designed decision priors with a
-  common 0.5 profile while retaining the exact evidence and originally
-  retrieved grounded memories.
-- **No memory:** retain the assigned persona and exact decision evidence while
-  removing the model-visible episodic-memory context.
+- **Common decision priors:** replace the five designed decision profiles with
+  one shared 0.5 profile while retaining the same evidence and accumulated
+  experience.
+- **Without accumulated experience:** retain the assigned persona and exact
+  decision evidence while removing the model-visible record of earlier
+  interactions.
 
-`scripts/build/build_part3_ablation_packets.py` selects one memory-bearing model
-opportunity per scenario-condition-persona-role stratum from the accepted main
-study. The resulting 120 matched source opportunities produce 480 blinded
-packets spanning all four persona-by-memory cells. The original main-study
-full-persona/full-memory response remains evaluator-side as a reproducibility
-reference rather than a factorial cell. The CPU preflight requires complete
-strata, exact variant pairing, no memory leakage, a genuinely neutral profile,
-and no evaluator metadata in the model-visible packet.
+`scripts/build/build_part3_ablation_packets.py` selects one model opportunity
+with accumulated experience per scenario-condition-persona-role stratum from
+the accepted main study. The resulting 120 matched source opportunities produce 480 blinded
+packets spanning all four persona-by-experience cells. The original main-study
+response with persona-specific priors and accumulated experience remains
+evaluator-side as a reproducibility reference rather than a factorial cell.
+The CPU preflight requires complete strata, exact variant pairing, no leakage
+of accumulated experience into the comparison without it, one genuinely
+common decision profile, and no evaluator metadata in the model-visible
+packet.
 
 These are prompt-level component substitutions, not new closed-loop
-trajectories. They test whether orientation and memory alter decisions on
-fixed observed opportunities. They cannot estimate how a no-memory or neutral
-policy would recursively change the later opportunity ecology. The result is
-therefore retained as an appendix-level architecture check.
+trajectories. They test whether persona-specific priors and accumulated
+experience alter decisions on fixed observed opportunities. They cannot
+estimate how removing either component would recursively change the later
+opportunity ecology. The result is therefore retained as an appendix-level
+experience check.
 
 ## Failure Criteria
 

@@ -22,11 +22,16 @@ if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
 import config
-from scripts.build.plan_part3_synthetic_study import scientific_decision_packet
+from scripts.build.plan_part3_synthetic_study import (
+    scientific_decision_packet,
+    scientific_state_update_packet,
+)
 from scripts.run.run_single import run_single
 from src.part3_closed_loop import (
     CausalDecision,
     CausalDecisionRequest,
+    EvolvingStateUpdate,
+    EvolvingStateUpdateRequest,
     Part3ClosedLoopController,
 )
 from src.interviews import required_output_schema
@@ -37,6 +42,7 @@ from src.personas import (
 from src.vllm_backend import (
     PacketResponseDecodeError,
     VLLMOfflineBackend,
+    packet_json_schema,
     scientific_packet_prompt_leakage,
 )
 
@@ -60,6 +66,19 @@ def _validate_runtime_contract() -> None:
             "Deployed categorical decision schema is incompatible with the "
             f"closed-loop runner: {sorted(schema)}"
         )
+    state_schema = packet_json_schema(
+        "in_simulation_state_update",
+        {
+            "prompt_id": "state-contract-check",
+            "evidence_ids": ["state-evidence-contract-check"],
+        },
+    )
+    if set(state_schema.get("properties", {})) != {
+        "checkpoint_id",
+        "state",
+        "evidence_by_dimension",
+    }:
+        raise RuntimeError("Deployed evolving-state schema is incompatible")
 
 
 class VLLMCategoricalCausalProvider:
@@ -70,6 +89,7 @@ class VLLMCategoricalCausalProvider:
     def __init__(self, backend: VLLMOfflineBackend) -> None:
         self.backend = backend
         self.inference_log: list[dict] = []
+        self.state_inference_log: list[dict] = []
 
     def decide_many(
         self, requests: Sequence[CausalDecisionRequest]
@@ -139,6 +159,67 @@ class VLLMCategoricalCausalProvider:
             )
         return decisions
 
+    def update_states_many(
+        self, requests: Sequence[EvolvingStateUpdateRequest]
+    ) -> list[EvolvingStateUpdate]:
+        personas = cognitive_persona_by_id()
+        packets = [
+            scientific_state_update_packet(
+                personas[request.persona_id], request
+            )
+            for request in requests
+        ]
+        leakage_by_prompt = {
+            str(packet["prompt_id"]): scientific_packet_prompt_leakage(packet)
+            for packet in packets
+        }
+        leakage_by_prompt = {
+            key: value for key, value in leakage_by_prompt.items() if value
+        }
+        if leakage_by_prompt:
+            raise ValueError(
+                f"Evaluator-only information leaked into state packets: {leakage_by_prompt}"
+            )
+        started = time.perf_counter()
+        results = self.backend.generate_prompt_packets(packets)
+        elapsed_seconds = time.perf_counter() - started
+        updates = []
+        for request, packet, result in zip(requests, packets, results):
+            response = result["response"]
+            updates.append(
+                EvolvingStateUpdate(
+                    checkpoint_id=request.checkpoint_id,
+                    persona_id=request.persona_id,
+                    state={
+                        key: int(value)
+                        for key, value in response["state"].items()
+                    },
+                    evidence_by_dimension={
+                        name: tuple(values)
+                        for name, values in response[
+                            "evidence_by_dimension"
+                        ].items()
+                    },
+                    policy_name="vllm_offline_evidence_linked_state_v1",
+                )
+            )
+            self.state_inference_log.append(
+                {
+                    "request": asdict(request),
+                    "packet": packet,
+                    "packet_sha256": hashlib.sha256(
+                        json.dumps(packet, sort_keys=True).encode("utf-8")
+                    ).hexdigest(),
+                    "model": self.backend.model,
+                    "model_revision": self.backend.model_revision,
+                    "thinking_enabled": self.backend.enable_thinking,
+                    "elapsed_seconds_for_batch": elapsed_seconds,
+                    "result": result,
+                    "free_text_used_as_causal_input": False,
+                }
+            )
+        return updates
+
 
 def _persona_assignment(simulation, assignment_round: int) -> dict[int, str]:
     staff_ids = [int(agent.gid) for agent in simulation.staff_agents]
@@ -183,6 +264,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decision-window-seconds", type=int, default=0)
     parser.add_argument("--max-model-decisions-per-window", type=int, default=0)
     parser.add_argument("--model-decision-sample-rate", type=float, default=1.0)
+    parser.add_argument("--evolving-state", action="store_true")
+    parser.add_argument("--evolving-state-interval-seconds", type=int, default=7200)
     return parser.parse_args()
 
 
@@ -221,6 +304,8 @@ def main() -> None:
             max_decisions_per_window=args.max_model_decisions_per_window,
             model_decision_sample_rate=args.model_decision_sample_rate,
             sampling_replication_id=args.assignment_round,
+            evolving_state_enabled=args.evolving_state,
+            evolving_state_interval_seconds=args.evolving_state_interval_seconds,
         )
 
     run_args = argparse.Namespace(

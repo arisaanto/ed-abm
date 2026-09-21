@@ -10,15 +10,15 @@
       "focus_support": "task_continuity",
       "spatial_legibility": "spatial_legibility"
     },
-    "quote_selection": "One prespecified synthetic interview bundle per scenario-condition-orientation cell was independently audited by Codex. Only answers passing grounding and claim-layer checks were eligible; displayed text is a verbatim excerpt.",
+    "quote_selection": "One prespecified synthetic interview bundle per scenario-condition-persona cell was independently audited by Codex. Only answers passing grounding and claim-layer checks were eligible; displayed text is a verbatim excerpt.",
     "qualitative_review": {
       "reviewer_type": "independent_model_assisted_audit",
       "reviewer_system": "OpenAI Codex",
       "human_review_completed": false,
       "answer_count": 240,
-      "answers_passing_scientific_use_gate": 184,
-      "selected_display_answer_count": 107,
-      "cells_without_retained_excerpt": 2
+      "answers_passing_scientific_use_gate": 140,
+      "selected_display_answer_count": 109,
+      "cells_without_retained_excerpt": 1
     },
     "note": "Scores are direct means of verified synthetic appraisal dimensions. Quotes are exact excerpts retained by an independent Codex audit, not human-reviewed material or Zurich ED staff testimony."
   },
@@ -140,547 +140,548 @@
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 4.0,
-        "coordination_support": 3.3,
-        "focus_support": 3.6,
-        "spatial_legibility": 5.0
-      },
-      "quotes": [
-        "The shift felt like a series of calculated trade-offs between visibility and task completion. I moved heavily between the nursing work area and the left patient rooms, treating the corridor as a transit zone rather than a social hub.",
-        "The NURSTA nurse station was the most supportive feature. It provided a central hub for substantial contact activity and mutual visibility, allowing me to efficiently coordinate with colleagues and update patient status.",
-        "Introducing semi-transparent partitions at the COCPIT station would best support my priorities by improving visibility without sacrificing acoustic privacy. This would allow for quicker assessment of colleague availability, reducing the time spent searching and enabling more efficient coordination."
-      ]
-    },
-    {
-      "persona": "adaptive_generalist",
-      "scenario": "high_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.6,
-        "coordination_support": 3.5,
-        "focus_support": 3.9,
-        "spatial_legibility": 5.7
-      },
-      "quotes": [
-        "The shift felt like a series of rapid context switches between patient care and coordination. I spent most of my time in the right patient-room area, but had to frequently move to the COCPIT station or circulation areas to manage workflow.",
-        "The COCPIT partitions were most supportive. They provided a transparent space for intervisibility, allowing me to see colleagues and coordinate without being fully embedded in the patient-room noise.",
-        "Adding a dedicated, semi-private huddle space near the right patient-room area would support better coordination without requiring full relocation to the COCPIT station. This would reduce the diversion cost of moving to the coordination station while maintaining focus."
-      ]
-    },
-    {
-      "persona": "adaptive_generalist",
-      "scenario": "high_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.6,
+        "overall_experience": 4.4,
         "coordination_support": 3.8,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.6
+        "focus_support": 3.8,
+        "spatial_legibility": 5.0
       },
       "quotes": [
-        "The shift felt like a constant negotiation between being present with patients and being available to the team. I spent most of my time in the left patient rooms and the nursing work area, shuttling back and forth.",
-        "The patient rooms themselves were the most supportive feature. They provided fixed clinical destinations where I could complete tasks like initial assessments and discharge planning without constant interruption.",
-        "I would introduce a dedicated, semi-private huddle space near the nursing work area for quick coordination. This would allow for focused discussions without leaving the patient rooms or getting lost in the circulation area."
+        "The shift felt defined by a rhythmic oscillation between the nursing work area and the left patient rooms. I wasn't anchored to one spot; instead, I moved back and forth, letting the immediate context dictate whether I needed to coordinate with the team or focus on patient care.",
+        "Two moments stood out. First, the missed opportunity with a nurse in the nursing work area when I was transitioning tasks; the lack of proximity meant a potential support link was lost.",
+        "Introducing a semi-private coordination nook near the left patient rooms would best support my priorities. It would allow for quick, focused coordination without the need to travel back to the busy nursing work area, reducing travel time and maintaining better task continuity."
       ]
     },
     {
       "persona": "adaptive_generalist",
       "scenario": "high_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.1,
-        "coordination_support": 3.4,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.0
-      },
-      "quotes": [
-        "The shift felt like a series of rapid context switches centered on the COCPIT station. I moved constantly between patient rooms and the coordination hub, treating the corridor as a transit zone rather than a workspace.",
-        "The COCPIT coordination station was the most supportive feature. Its central location and substantial colleague visibility allowed for efficient bed management and rapid information exchange.",
-        "Introducing semi-private huddle spaces near patient rooms would support coordination without requiring travel to COCPIT. This would reduce travel time and allow for focused discussions with doctors/nurses near the point of care."
-      ]
-    },
-    {
-      "persona": "adaptive_generalist",
-      "scenario": "normal_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.5,
-        "coordination_support": 3.6,
-        "focus_support": 3.5,
-        "spatial_legibility": 5.0
-      },
-      "quotes": [
-        "The shift felt like a series of rapid context switches centered on the COCPIT station. I moved constantly between that hub and the patient rooms or corridors, balancing immediate coordination needs with the need to protect my focus.",
-        "The COCPIT coordination station was the most supportive feature. It provided substantial colleague visibility and contact activity, serving as the central hub for managing bed assignments and coordinating with nurses, which was essential for maintaining situational awareness.",
-        "Introducing semi-transparent partitions or visual markers in the corridor to increase mutual visibility without restricting movement would support coordination. This would allow for opportunistic contacts without the need for close physical proximity, reducing missed opportunities."
-      ]
-    },
-    {
-      "persona": "adaptive_generalist",
-      "scenario": "normal_load",
       "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.5,
-        "coordination_support": 4.4,
-        "focus_support": 3.6,
-        "spatial_legibility": 5.5
-      },
-      "quotes": [
-        "The shift felt like a continuous negotiation between the patient rooms and the coordination hubs. I spent most of my time shuttling between the NURSTA station and the right patient-room area, with the corridor acting as a transit zone rather than a place to linger.",
-        "The NURSTA nurse station was the most supportive feature. It offered substantial colleague visibility and contact activity, making it the primary hub for coordination.",
-        "Adding a small, visible huddle space or standing area in the corridor near the patient room entrances would support better coordination without requiring a trip back to NURSTA."
-      ]
-    },
-    {
-      "persona": "adaptive_generalist",
-      "scenario": "normal_load",
-      "condition": "cockpit_only",
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
         "overall_experience": 4.8,
-        "coordination_support": 4.6,
-        "focus_support": 4.2,
-        "spatial_legibility": 5.6
+        "coordination_support": 4.3,
+        "focus_support": 3.6,
+        "spatial_legibility": 5.9
       },
       "quotes": [
-        "The shift felt like a series of rapid context switches rather than a linear flow. I spent most of my time in the left patient-room area, but the work demanded constant movement to the nursing work area and COCPIT station.",
-        "The transparent COCPIT partitions were most supportive. They allowed me to maintain moderate colleague visibility and substantial contact activity while moving between the coordination station and patient rooms, enabling me to gauge urgency and plan next steps without being physically tethered to one spot.",
-        "Introducing semi-private huddle zones near the patient rooms would support better coordination without sacrificing focus. This would allow for brief, high-value interactions without the need to travel to the circulation area, reducing the cost of missed opportunities."
+        "The layout felt like a series of distinct zones rather than a unified flow. I spent a lot of time moving between the left patient rooms, the nursing work area, and the shared circulation spaces.",
+        "The layout made it hard to protect focus because the circulation areas were also the primary spots for opportunistic contacts. I had to constantly weigh whether a passing colleague was worth engaging with.",
+        "I would redesign the NURSTA nurse station to remove the relocated desk obstacle and integrate the standing area more seamlessly with the main flow."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.3,
+        "coordination_support": 4.8,
+        "focus_support": 3.9,
+        "spatial_legibility": 6.2
+      },
+      "quotes": [
+        "The layout created a tension between coordination and focus. In the nursing work area, I often had to decide whether to engage in optional contacts with doctors or nurses, weighing the timing and relevance.",
+        "The limited colleague visibility in the nursing work area was the most difficult feature. Periods of up to 231 seconds with no mutually visible colleagues made it hard to coordinate effectively and increased the strain from interruptions, as I had to actively seek out colleagues.",
+        "Improving visibility in the nursing work area would best support my priorities by reducing the need to actively seek colleagues and lowering interruption strain."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 4.7,
+        "coordination_support": 3.4,
+        "focus_support": 4.4,
+        "spatial_legibility": 4.8
+      },
+      "quotes": [
+        "The layout feels like a hub-and-spoke system where the COCPIT station is the gravitational center. I spent most of my time shuttling between that central coordination point and the patient rooms or corridor.",
+        "The COCPIT coordination station was the most supportive feature. It served as the central hub for bed management and team communication.",
+        "Replacing the opaque COCPIT partitions with transparent ones would best support my priorities. This would enhance passive visibility, allowing me to assess colleague availability and context without direct engagement, reducing the need to defer contacts and lowering interruption strain."
       ]
     },
     {
       "persona": "adaptive_generalist",
       "scenario": "normal_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.3,
-        "coordination_support": 3.8,
-        "focus_support": 3.5,
-        "spatial_legibility": 4.8
-      },
-      "quotes": [
-        "The shift felt like a series of rapid context switches between the hub and the bedside. I spent most of my time moving between the nurse station and the right patient rooms, with the corridor acting as a transit zone.",
-        "The NURSTA nurse station was the most supportive feature. It provided a central hub for coordination, with substantial colleague visibility and contact activity.",
-        "Introducing a visual alert system in the corridors would best support my priorities by reducing the cognitive load of searching for colleagues. This would allow for quicker, lower-cost coordination during transit."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "high_load",
       "condition": "baseline",
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 5.8,
-        "coordination_support": 3.7,
-        "focus_support": 5.7,
-        "spatial_legibility": 5.0
-      },
-      "quotes": [
-        "The shift felt defined by a rhythm of high-acuity engagement in the shared circulation area punctuated by periods of isolated focus in the nursing work area.",
-        "The shared clinical circulation area was the most supportive feature because it facilitated substantial contact activity for patient-facing care and bed management. Its openness allowed for opportunistic but valuable interactions, such as discussing next steps with a doctor or managing bed capacity, which were critical for maintaining workflow continuity.",
-        "Introducing a semi-private, acoustically dampened pod in the shared circulation area for brief documentation or confidential calls would best support my priorities. It would reduce the travel burden to the nursing work area for focused tasks while maintaining proximity to coordination opportunities, balancing focus and accessibility."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "high_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.8,
-        "coordination_support": 4.2,
-        "focus_support": 5.7,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The shift felt like a series of rapid, high-value sprints centered on the right patient rooms. I moved constantly between the nurse station and patient care areas, treating the space as a hub-and-spoke system.",
-        "The NURSTA nurse station was the most supportive feature. Its relocated desk and separate standing area allowed for efficient coordination without blocking circulation.",
-        "I would introduce a visual status indicator at the entrance of the right patient rooms, showing whether a nurse is in focus or available mode."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "high_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.6,
-        "coordination_support": 4.4,
-        "focus_support": 5.7,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The shift felt like a series of high-friction transitions. I moved constantly between the COCPIT station, the nursing work area, and patient rooms, but meaningful contact was sporadic.",
-        "The COCPIT partitions were supportive because they provided transparency for staff intervisibility. This allowed me to see colleagues in the coordination station from various points, facilitating the 'substantial' contact activity observed there.",
-        "I would introduce a semi-private, high-visibility huddle zone adjacent to the nursing work area. This would allow for quick, focused discussions without requiring colleagues to move to the busy circulation area or risk interruption in the patient rooms."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "high_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.2,
-        "coordination_support": 3.5,
-        "focus_support": 5.3,
-        "spatial_legibility": 4.8
-      },
-      "quotes": [
-        "The shift felt like a series of high-friction transitions between the nurse station and the right patient rooms. I was constantly moving, often without seeing colleagues, which made coordination feel reactive rather than proactive.",
-        "The NURSTA nurse station was the most supportive feature. It provided a dedicated standing area and a clear location for planning and next-step discussions with doctors, allowing for concise treatment and order updates without the distractions of the patient rooms.",
-        "Adding semi-transparent partitions or visual markers in the corridors to indicate colleague presence and task status would support better coordination. This would allow me to assess operational value from a distance, reducing the need for physical proximity and minimizing task disruption."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "normal_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.8,
-        "coordination_support": 4.3,
-        "focus_support": 5.8,
-        "spatial_legibility": 5.4
-      },
-      "quotes": [
-        "The shift felt like a series of rapid returns to the COCPIT station. I moved between patient rooms and the corridor, but the coordination hub was the anchor.",
-        "Two moments stand out. First, the missed opportunity with the nurse in the corridor when they were moving away; it highlighted how fleeting coordination can be when not at the station.",
-        "The COCPIT station allowed me to protect focus by limiting interactions to those with clear value. I deferred optional contacts with doctors and nurses in the corridor when they didn't unblock a task."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "normal_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 6.0,
-        "coordination_support": 4.9,
-        "focus_support": 6.0,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The shift felt like a series of deliberate choices between engagement and isolation. I spent significant time in the nurse station, but visibility was often low, forcing me to rely on proximity rather than sight to coordinate.",
-        "The shared clinical circulation area was the most supportive feature. It provided a flexible space for patient interactions, task completion, and opportunistic contacts.",
-        "I would redesign the NURSTA nurse station to enhance mutual visibility and reduce the physical barrier between the desk and the standing area. This would allow for quicker assessment of colleague availability and reduce the need for travel or deferral of contacts."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "normal_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.9,
-        "coordination_support": 4.8,
-        "focus_support": 5.9,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The shift felt like a series of calculated interruptions. I spent most of my time shuttling between the COCPIT station and patient rooms, using the shared circulation areas as a buffer.",
-        "The transparent COCPIT partitions were the most supportive feature. They allowed me to maintain situational awareness of the team and spot colleagues like the doctor or coordination nurse without being physically immersed in the noise.",
-        "I would introduce semi-private huddle zones near the COCPIT station. This would allow for quick, focused status updates without the risk of being overheard or interrupted by passersby in the open circulation area."
-      ]
-    },
-    {
-      "persona": "focus_protector",
-      "scenario": "normal_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 6.0,
-        "coordination_support": 4.1,
-        "focus_support": 5.9,
-        "spatial_legibility": 5.2
-      },
-      "quotes": [
-        "The shift felt like a series of rapid, high-value sprints between the patient rooms and the coordination station. I maintained a steady rhythm of task completion and brief handoffs, but the layout created a distinct separation between my clinical work and the broader team presence.",
-        "The COCPIT coordination station was the most supportive feature. It served as a central hub for substantial contact activity and frequent transitions from and to the patient rooms.",
-        "Introducing a semi-transparent, fixed huddle zone in the circulation area near the patient rooms would best support my priorities. This would allow for quick, visible coordination with colleagues without requiring travel to the COCPIT station or NURSTA, reducing the missed opportunities seen in the corridor."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "high_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.0,
-        "coordination_support": 3.3,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.1
-      },
-      "quotes": [
-        "The left patient-room area was the most supportive feature because it was where I had substantial presence and contact activity. It allowed me to complete the Initial Nursing Assessment and discuss treatment and orders directly with patients, ensuring their immediate needs were met with dignity and clarity."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "high_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.4,
-        "coordination_support": 3.8,
-        "focus_support": 3.8,
-        "spatial_legibility": 5.7
-      },
-      "quotes": [
-        "The COCPIT station offers substantial colleague visibility, which aids coordination, but the need to travel to patient rooms for tasks like assessments and diagnostics breaks my focus."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "high_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.4,
-        "coordination_support": 4.0,
-        "focus_support": 4.1,
-        "spatial_legibility": 5.6
-      },
-      "quotes": [
-        "The shift felt defined by constant movement between patient rooms and the central circulation hub. I found myself frequently traversing the corridor to coordinate care, which kept me physically connected to the team but also fragmented my attention.",
-        "The transparent COCPIT partitions were most supportive. They allowed me to maintain visibility of colleagues in the shared circulation area while providing a defined coordination point.",
-        "Introducing semi-private, acoustically dampened nooks within the shared circulation area would best support my priorities. These spaces would allow for focused patient status updates and handoffs without the need to enter a patient room or station, enhancing both dignity and continuity."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "high_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.0,
-        "coordination_support": 3.5,
-        "focus_support": 3.3,
-        "spatial_legibility": 5.0
-      },
-      "quotes": [
-        "No grounded qualitative excerpt was retained for this cell."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "normal_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.1,
-        "coordination_support": 3.6,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.2
-      },
-      "quotes": [
-        "My shift felt defined by a constant rhythm of returning to the COCPIT coordination station after moving through the corridors. I spent significant time traveling between this central hub and the patient areas, often covering distances of over 16 meters in under 20 seconds.",
-        "The COCPIT station allowed for substantial colleague visibility and contact activity, which supported coordination. However, in the corridor, despite substantial contact activity, colleague visibility was limited.",
-        "The COCPIT coordination station was the most supportive feature. Its substantial colleague visibility and contact activity made it an effective hub for managing patient status updates and coordinating with the team."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "normal_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.7,
+        "overall_experience": 4.9,
         "coordination_support": 4.3,
         "focus_support": 4.2,
-        "spatial_legibility": 5.7
+        "spatial_legibility": 5.2
       },
       "quotes": [
-        "The shift felt defined by a rhythmic pull between the COCPIT station and the corridors. I spent most of my time moving back and forth, using the open sightlines to gauge availability before committing to a conversation.",
-        "The COCPIT partitions were the most supportive feature. Their transparency allowed for substantial colleague visibility, which was crucial for managing capacity and bed assignments.",
-        "I would introduce a semi-enclosed alcove adjacent to the COCPIT station for patient discussions. This would allow for private explanations and status updates without requiring a full room change, supporting dignity and continuity."
+        "The shift felt like a series of deliberate returns to the COCPIT station. I moved between the coordination hub and the patient areas, but the rhythm was defined by coming back to check in.",
+        "The layout supported coordination by keeping the COCPIT station as a central, visible hub. However, protecting focus required deliberate choices.",
+        "Extending the COCPIT partitions to create more semi-private coordination zones in the circulation areas would best support my priorities. This would allow for better focus protection while still enabling necessary coordination, reducing the need to return to the central station for every interaction."
       ]
     },
     {
-      "persona": "patient_advocate",
-      "scenario": "normal_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.4,
-        "coordination_support": 3.8,
-        "focus_support": 4.0,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The layout feels like a hub-and-spoke system where the COCPIT station is the gravitational center. I found myself constantly shuttling between that central coordination point and the patient rooms or corridors.",
-        "The COCPIT partitions are the most supportive feature. Their transparent configuration for staff intervisibility allows me to see colleagues and coordinate effectively without needing to be in the same room.",
-        "I would introduce transparent, fixed intervisibility points in the patient rooms, similar to the COCPIT partitions, to allow staff in the rooms to see colleagues in the corridor or hub."
-      ]
-    },
-    {
-      "persona": "patient_advocate",
-      "scenario": "normal_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.1,
-        "coordination_support": 3.5,
-        "focus_support": 3.5,
-        "spatial_legibility": 5.3
-      },
-      "quotes": [
-        "No grounded qualitative excerpt was retained for this cell."
-      ]
-    },
-    {
-      "persona": "team_connector",
-      "scenario": "high_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.4,
-        "coordination_support": 3.9,
-        "focus_support": 4.0,
-        "spatial_legibility": 4.8
-      },
-      "quotes": [
-        "The shift felt defined by a rhythmic oscillation between the nursing work area and the left patient rooms. It was not a static desk job but a series of substantial transitions back and forth.",
-        "The left patient-room area itself is the most supportive feature. It is where I spent substantial presence and where most of my direct patient interactions and task completions occurred.",
-        "I would introduce a semi-private coordination nook within the left patient-room area, close to the nursing work area but distinct from the corridor. This would allow for brief, low-diversion exchanges with colleagues without having to travel all the way to the nursing station or get lost in the corridor traffic."
-      ]
-    },
-    {
-      "persona": "team_connector",
-      "scenario": "high_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.1,
-        "coordination_support": 4.5,
-        "focus_support": 4.3,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The layout feels like a high-velocity hub where coordination is the primary work, not an interruption. I found myself constantly shuttling between the COCPIT station, the nursing work area, and the patient rooms.",
-        "The COCPIT partitions are the most supportive feature. They are transparent for staff intervisibility, which allows me to see who is there and gauge their availability without having to approach them.",
-        "I would add a semi-private, acoustically dampened huddle space near the shared circulation area, adjacent to the COCPIT station. This would allow for brief, focused coordination without the distractions of the open corridor or the formality of the COCPIT station."
-      ]
-    },
-    {
-      "persona": "team_connector",
-      "scenario": "high_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.2,
-        "coordination_support": 4.5,
-        "focus_support": 4.6,
-        "spatial_legibility": 5.7
-      },
-      "quotes": [
-        "The layout feels like a hub-and-spoke system where the COCPIT station is the gravitational center. I found myself constantly shuttling between that central coordination point and the patient rooms or corridors.",
-        "The COCPIT partitions are the most supportive feature. They provide a transparent but distinct zone for coordination.",
-        "I would introduce semi-private, acoustically dampened huddle pods near the COCPIT but outside the main partitioned area. This would allow for slightly more complex coordination without the full interruption cost of leaving the hub or the unpredictability of the corridor."
-      ]
-    },
-    {
-      "persona": "team_connector",
-      "scenario": "high_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.0,
-        "coordination_support": 4.2,
-        "focus_support": 4.0,
-        "spatial_legibility": 5.1
-      },
-      "quotes": [
-        "The layout feels like a hub-and-spoke system where the COCPIT station is the gravitational center. I spent most of my time shuttling between that coordination point and the corridors, creating a rhythm of constant movement.",
-        "The COCPIT coordination station is the most supportive feature. It’s where I had substantial colleague visibility and contact activity.",
-        "I would introduce semi-private alcoves in the circulation areas near the COCPIT station. This would allow for brief, focused coordination without the need to return to the main hub or risk being interrupted by passing traffic."
-      ]
-    },
-    {
-      "persona": "team_connector",
-      "scenario": "normal_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 5.1,
-        "coordination_support": 4.2,
-        "focus_support": 4.4,
-        "spatial_legibility": 5.3
-      },
-      "quotes": [
-        "The shift felt like a series of rapid returns to the COCPIT station. It wasn't just a desk; it was the gravitational center for every decision.",
-        "The COCPIT coordination station was the most supportive feature. It provided a dedicated space for substantial colleague visibility and contact activity.",
-        "I would introduce semi-transparent partitions or visual markers in the corridor to signal colleague presence without requiring physical proximity. This would allow me to maintain shared awareness while working in the patient rooms, reducing the need to return to COCPIT for every minor check-in."
-      ]
-    },
-    {
-      "persona": "team_connector",
+      "persona": "adaptive_generalist",
       "scenario": "normal_load",
       "condition": "both",
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 5.4,
-        "coordination_support": 4.8,
-        "focus_support": 4.6,
-        "spatial_legibility": 5.9
+        "overall_experience": 5.3,
+        "coordination_support": 4.5,
+        "focus_support": 3.7,
+        "spatial_legibility": 5.8
       },
       "quotes": [
-        "The shift felt like a continuous loop between the nursing station and the left patient rooms. It wasn't just about moving; it was about maintaining a thread of awareness across that distance.",
-        "The open circulation and the transparent COCPIT partitions were key. They allowed me to see who was moving and where the coordination nurse was, even if I wasn't right next to them.",
-        "I would add a small, semi-private huddle space or digital kiosk near the entrance to the left patient rooms. This would allow for quick, focused handoffs without having to walk all the way back to the nursing station or interrupt a patient interaction."
+        "The shift felt like a rhythmic oscillation between the patient rooms and the coordination hubs. I spent most of my time in the right patient-room area, moving back and forth to the nurse station and the coordination point.",
+        "The layout forced a trade-off. When I was in the right patient-room area, I had substantial contact activity but limited colleague visibility, which helped me protect task focus on the patient.",
+        "Adding a semi-private huddle space in the corridor or near the patient rooms would support coordination without requiring a trip to the NURSTA. This would reduce the missed opportunities in the circulation area."
       ]
     },
     {
-      "persona": "team_connector",
+      "persona": "adaptive_generalist",
       "scenario": "normal_load",
       "condition": "cockpit_only",
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
         "overall_experience": 5.3,
+        "coordination_support": 4.5,
+        "focus_support": 3.6,
+        "spatial_legibility": 5.8
+      },
+      "quotes": [
+        "Two moments stand out. First, completing the Medical Evaluation in the shared circulation area, which maintained momentum without getting stuck in a room.",
+        "The shared clinical circulation area was the most supportive feature. It acted as a buffer zone where I could complete tasks or have patient interactions without being fully committed to a room.",
+        "I would add transparent partitions or a visual line-of-sight from the patient rooms to the circulation area. This would allow me to maintain focus inside the room while still being visible to colleagues in the corridor, reducing the invisibility problem."
+      ]
+    },
+    {
+      "persona": "adaptive_generalist",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.0,
+        "coordination_support": 4.1,
+        "focus_support": 4.4,
+        "spatial_legibility": 5.3
+      },
+      "quotes": [
+        "Two moments stood out. First, the missed opportunity in the corridor where a nurse was moving away; it highlighted how fleeting coordination can be when visibility is limited.",
+        "The NURSTA nurse station was the most supportive feature. It provided a dedicated standing area and a hub for substantial contact activity.",
+        "I would add a semi-private huddle space near the right patient rooms for quick coordination. This would reduce the need to travel back to the nurse station for every interaction, saving time and reducing the disruption to patient care focus."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.1,
+        "coordination_support": 4.2,
+        "focus_support": 6.3,
+        "spatial_legibility": 5.1
+      },
+      "quotes": [
+        "The shift felt defined by a rhythm of rapid transitions between the nursing work area and the shared clinical circulation space. I maintained steady task continuity without significant interruption strain, but the environment required constant vigilance to catch colleagues in passing.",
+        "The shared clinical circulation area was the most supportive feature because it facilitated the majority of my necessary contacts, including patient updates and nurse coordination.",
+        "Introducing semi-transparent partitions or visual markers in the shared clinical circulation area would improve colleague visibility without blocking movement. This would allow me to spot colleagues earlier and decide whether to engage, reducing the risk of missed opportunities like the one with the coordination nurse."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.3,
+        "coordination_support": 5.2,
+        "focus_support": 6.6,
+        "spatial_legibility": 6.2
+      },
+      "quotes": [
+        "The shift felt like a rhythmic circuit between the nurse station, the coordination hub, and the patient rooms. It wasn't about staying put; it was about moving through these zones to maintain flow.",
+        "Two moments stand out. First, the missed opportunity with the nurse in the corridor when I was transitioning tasks; it highlighted how easy it is to lose a coordination chance if we aren't physically close.",
+        "I would add a visual status indicator at the entrance to the patient rooms or in the circulation area to show when a nurse is in a focused task state versus available for coordination."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.3,
+        "coordination_support": 5.4,
+        "focus_support": 6.6,
+        "spatial_legibility": 6.3
+      },
+      "quotes": [
+        "The transparent COCPIT partitions were the most supportive feature. They allowed me to see colleagues in the coordination station without being drawn into conversation.",
+        "Introducing a centralized, visible 'status board' in the shared clinical circulation area that displays real-time task states and colleague availability would best support my priorities."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.0,
+        "coordination_support": 4.5,
+        "focus_support": 6.1,
+        "spatial_legibility": 5.7
+      },
+      "quotes": [
+        "The corridor and shared circulation areas created the greatest difficulty. While they facilitated movement, they also presented missed opportunities for coordination because colleagues were often busy or moving away.",
+        "Adding a small, dedicated standing area in the shared circulation zone would best support my priorities. It would allow for brief, high-value coordination without requiring travel to the nurse station or causing spatial diversion in the patient rooms."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.1,
+        "coordination_support": 4.8,
+        "focus_support": 6.3,
+        "spatial_legibility": 5.6
+      },
+      "quotes": [
+        "The shift felt like a series of deliberate returns to the COCPIT station. I moved between patient rooms and the corridor, but the coordination hub was the anchor.",
+        "The corridor and shared circulation area created the greatest difficulty. While necessary for movement, it offered limited colleague visibility and led to missed opportunities with doctors and nurses who were transient.",
+        "I would introduce a visual status indicator at the COCPIT station to signal 'focus mode' or 'available'. This would allow colleagues to see my availability without interrupting, reducing optional contact strain in later hours."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.3,
+        "coordination_support": 5.4,
+        "focus_support": 6.1,
+        "spatial_legibility": 6.2
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic oscillation between the NURSTA and the shared clinical circulation area. I maintained strong task continuity, particularly during diagnostics and assessments, by treating the circulation space as my primary operational hub.",
+        "The NURSTA nurse station created difficulty when I needed to coordinate with colleagues who were not in close proximity. For example, I missed an opportunity to speak with a coordination nurse because we were not close enough during a task transition.",
+        "Introducing a dedicated, mobile collaboration zone near the shared clinical circulation area would best support my priorities. This would allow for quick, face-to-face coordination with colleagues without requiring me to return to the NURSTA or wait for them to be in close proximity."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.5,
+        "coordination_support": 5.8,
+        "focus_support": 6.5,
+        "spatial_legibility": 6.5
+      },
+      "quotes": [
+        "The shift felt like a series of deliberate choices between engagement and isolation. I moved constantly between the COCPIT station and patient rooms, where visibility was high but interaction was selective.",
+        "Adding acoustic privacy to the COCPIT station would best support my priorities by reducing optional interruptions and lowering strain. The tradeoff is reduced visibility, which might make it harder to quickly assess the value of potential contacts, potentially delaying high-value coordination."
+      ]
+    },
+    {
+      "persona": "focus_protector",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.0,
+        "coordination_support": 4.2,
+        "focus_support": 6.0,
+        "spatial_legibility": 5.2
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic oscillation between the nurse station and the patient rooms. I maintained strong task continuity as the day progressed, with team support stabilizing by the end.",
+        "The NURSTA nurse station, with its relocated desk and separate standing area, was the most supportive feature. It provided a substantial presence and visibility for colleagues, making it an effective hub for the high-value contacts I needed, such as the optional discussions with the doctor and nurse that proceeded successfully.",
+        "Introducing a visible, standing coordination point in the corridor near the patient rooms would best support my priorities. It would allow for quick assessment of colleagues' availability and operational value, reducing the missed opportunities seen in the circulation area."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 4.3,
+        "coordination_support": 3.5,
+        "focus_support": 3.8,
+        "spatial_legibility": 4.8
+      },
+      "quotes": [
+        "The layout forced a trade-off: I could maintain strong task continuity in the patient rooms, but coordinating with others required leaving that focus to enter the circulation areas.",
+        "The nursing work area and the circulation zones created the greatest difficulty. While the circulation area was necessary for movement, the nursing work area often left me with no mutual visibility of colleagues for long periods, leading to missed opportunities for coordination.",
+        "Introducing transparent partitions or a visual status board in the nursing work area would best support my priorities. It would allow me to maintain task focus while still being aware of colleague presence, enabling timely coordination without leaving my station."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 4.8,
+        "coordination_support": 3.9,
+        "focus_support": 4.9,
+        "spatial_legibility": 5.6
+      },
+      "quotes": [
+        "The layout supports focus by providing distinct areas like the COCPIT partitions and the NURSTA station, where I could maintain high task continuity. However, coordination is challenging because it often requires moving into the shared circulation area, where visibility is high but meaningful contact is intermittent.",
+        "The COCPIT partitions are the most supportive feature. They provide a transparent yet distinct space for coordination, allowing me to maintain task continuity while remaining visible to the team.",
+        "I would introduce designated, semi-private huddle zones within the shared circulation area. These would provide a clear, accessible space for quick handoffs and patient status updates, reducing the need to travel back to COCPIT or wait for colleagues in open corridors."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.7,
         "coordination_support": 4.9,
-        "focus_support": 4.5,
+        "focus_support": 5.8,
+        "spatial_legibility": 5.8
+      },
+      "quotes": [
+        "The layout created a tension between the need for constant coordination and the need for task focus. The shared clinical circulation area was a hub for substantial contact activity, which facilitated quick updates but also introduced interruption strain as the shift progressed.",
+        "I would introduce semi-private 'huddle nooks' within the shared clinical circulation area. These would provide a designated space for brief, focused discussions about patient care, ensuring that explanations and handoffs are not interrupted by passing traffic."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 4.7,
+        "coordination_support": 3.7,
+        "focus_support": 4.9,
+        "spatial_legibility": 5.3
+      },
+      "quotes": [
+        "Replacing the opaque COCPIT partitions with semi-transparent or open designs would best support my priorities. This would enhance mutual visibility, allowing for quicker coordination and reassurance of team presence without requiring physical travel to the station."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 4.8,
+        "coordination_support": 3.8,
+        "focus_support": 5.5,
+        "spatial_legibility": 5.3
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic pull between the COCPIT station and the corridors. I spent substantial time moving between these zones, often finding myself in the circulation area to handle placements or patient discussions.",
+        "Introducing semi-private, acoustically buffered pods near the COCPIT station for patient discussions and nurse handoffs would best support my priorities. This would allow for dignified, private explanations and continuity-focused planning without leaving the coordination hub."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.6,
+        "coordination_support": 4.6,
+        "focus_support": 5.3,
+        "spatial_legibility": 5.7
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic pull between the COCPIT station and the corridors. I spent most of my time moving between these two hubs, using the station for coordination and the corridors for direct patient updates.",
+        "The COCPIT partitions were the most supportive feature. Their transparency allowed for substantial colleague visibility and contact activity, facilitating quick coordination and team support without the need for physical movement to every room.",
+        "Introducing semi-private alcoves in the circulation area would best support patient-centered care by providing a space for uninterrupted explanations and dignity-preserving conversations. This would reduce the pressure to rush patient updates in open corridors."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.5,
+        "coordination_support": 4.7,
+        "focus_support": 5.3,
+        "spatial_legibility": 5.9
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic pull between the COCPIT station and the corridors. I spent most of my time moving back and forth, using the station as a hub for coordination but relying on the circulation area for actual patient interactions.",
+        "The COCPIT partitions were the most supportive feature. Their transparency allowed for substantial colleague visibility and contact activity, which was essential for my role in coordination.",
+        "I would introduce a semi-private alcove in the circulation area for patient updates. This would allow for better explanation and dignity without requiring a full room."
+      ]
+    },
+    {
+      "persona": "patient_advocate",
+      "scenario": "normal_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.1,
+        "coordination_support": 4.5,
+        "focus_support": 5.2,
+        "spatial_legibility": 5.6
+      },
+      "quotes": [
+        "The shift felt defined by a rhythmic pull between the COCPIT coordination station and the corridors. I spent substantial time moving between these hubs, creating a pattern of frequent, short trips to manage bed placements and patient updates.",
+        "The layout creates a high-visibility environment at the COCPIT station, which supports coordination but also invites optional interruptions. I had to actively manage these by deferring contacts when timing was poor.",
+        "I would introduce semi-private, acoustically dampened nooks within the corridor and shared circulation area. These would allow for brief, dignified patient status updates and nurse consultations without requiring a return to the COCPIT station or entering a full patient room."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.2,
+        "coordination_support": 4.4,
+        "focus_support": 5.3,
+        "spatial_legibility": 5.4
+      },
+      "quotes": [
+        "The shift felt like a series of short, sharp bursts of coordination followed by isolation. I spent most of my time shuttling between the left patient rooms and the nursing work area, but the physical layout made sustained shared awareness difficult.",
+        "The nursing work area was the most difficult because, despite being a central hub, it offered limited visibility of colleagues. I often arrived there only to find no one visible, or to miss a contact because the colleague was in the middle of a transition.",
+        "I would introduce semi-transparent partitions or a more open configuration in the nursing work area to improve visibility without sacrificing all privacy. This would allow for quicker, less intrusive coordination checks."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.6,
+        "coordination_support": 4.7,
+        "focus_support": 4.9,
+        "spatial_legibility": 5.6
+      },
+      "quotes": [
+        "The shift felt like a continuous loop of high-visibility coordination. I spent most of my time moving between the left patient rooms and the nursing work area, or heading to the COCPIT station.",
+        "The COCPIT coordination station was the most supportive feature. It served as a clear destination for flow-related discussions, like the travel to it after a disposition decision.",
+        "I would add fixed, semi-private standing areas within the shared circulation zones. This would allow for brief, focused handoffs without requiring a trip to the nursing work area or COCPIT station."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.1,
+        "coordination_support": 4.5,
+        "focus_support": 4.4,
         "spatial_legibility": 5.5
       },
       "quotes": [
-        "The layout feels like a hub-and-spoke system where the COCPIT station is the gravitational center. I found myself constantly shuttling between that coordination point and the patient rooms or corridors.",
-        "The COCPIT partitions are the most supportive feature. They provide transparent intervisibility, allowing me to see colleagues and assess availability before approaching.",
-        "I would add semi-enclosed coordination nooks in the shared circulation area. This would allow for stable, brief handoffs without requiring a trip back to COCPIT, reducing travel time and fragmentation."
+        "The shift felt like a rhythmic exchange between the COCPIT station and the corridors. I used the station to anchor awareness and the corridor to execute tasks.",
+        "The COCPIT partitions are most supportive. They provide a central hub for shared awareness without being fully enclosed.",
+        "I would add a visual status indicator at the COCPIT station to show availability. This would reduce interruption strain by allowing colleagues to self-select appropriate times for contact, improving task continuity."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.2,
+        "coordination_support": 4.2,
+        "focus_support": 5.3,
+        "spatial_legibility": 4.9
+      },
+      "quotes": [
+        "Two moments stand out. First, the long stretch in the early shift where I had no mutually visible colleague in the COCPIT for nearly five minutes, despite it being the coordination hub.",
+        "The COCPIT coordination station itself is the most supportive feature. Its central location and substantial colleague visibility make it the natural hub for shared awareness.",
+        "Replacing the opaque COCPIT partitions with semi-transparent or open-front designs would best support my priorities. This would allow for greater mutual visibility and reduce the hesitation to initiate brief contacts, thereby lowering interruption strain and improving shared awareness."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.2,
+        "coordination_support": 4.2,
+        "focus_support": 4.8,
+        "spatial_legibility": 5.2
+      },
+      "quotes": [
+        "The shift felt like a series of deliberate sprints between the coordination station and the corridor. I treated the station as my anchor, returning frequently to reset and coordinate, while the corridor was where the actual placement work happened.",
+        "The layout forces a trade-off. The station supports coordination through high visibility but invites optional interruptions that I often deferred.",
+        "The corridor and circulation area created the greatest difficulty. While it was the site of patient placement, it had limited colleague visibility and substantial movement, leading to missed opportunities for coordination."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.7,
+        "coordination_support": 5.2,
+        "focus_support": 4.5,
+        "spatial_legibility": 5.7
+      },
+      "quotes": [
+        "The shift felt like a series of rapid toggles between patient rooms and the nursing station. I spent most time in the left patient-room area, moving back and forth to check status or hand off tasks.",
+        "Two moments stand out. First, the missed opportunity with a nurse in the nursing work area because they weren't close enough during a task transition.",
+        "I would introduce a transparent coordination kiosk in the left patient-room area. This would allow me to check status or signal availability without leaving the patient room or traveling to the nursing station."
+      ]
+    },
+    {
+      "persona": "team_connector",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.6,
+        "coordination_support": 4.6,
+        "focus_support": 4.6,
+        "spatial_legibility": 5.5
+      },
+      "quotes": [
+        "The shift felt like a series of deliberate returns to the COCPIT station. I wasn't just passing through; I was using that space to reset my awareness of bed flow and capacity.",
+        "The shared clinical circulation area was difficult for coordination. While it had moderate visibility, the lack of physical proximity and the transient nature of movement there led to missed opportunities.",
+        "I would add a small, semi-enclosed huddle pod adjacent to the COCPIT station. This would allow for slightly longer, more private coordination on complex bed flows without requiring a full trip to a private office, while keeping the transparency of the main hub."
       ]
     },
     {
@@ -690,15 +691,14 @@
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 4.6,
-        "coordination_support": 3.9,
-        "focus_support": 4.4,
-        "spatial_legibility": 4.8
+        "overall_experience": 5.1,
+        "coordination_support": 4.1,
+        "focus_support": 4.6,
+        "spatial_legibility": 5.1
       },
       "quotes": [
-        "The shift felt like a rhythmic oscillation between the nursing work area and the shared clinical circulation space. I spent most of my time moving between these two zones, using the circulation area for patient updates and tasks, while the work area served as the hub for deeper coordination.",
-        "The layout supported focus by allowing me to retreat to the nursing work area for tasks, but coordination often happened in the circulation area.",
-        "The shared clinical circulation area was the most supportive feature. It served as a hub for patient status updates, diagnostics, and initial assessments."
+        "The shift felt defined by a rhythmic oscillation between the nursing work area and the shared clinical circulation. I spent most of my time moving between these two zones, using the circulation space for assessments and patient updates.",
+        "Two moments stood out. First, the long stretch in the nursing work area where I had no mutually visible colleague for over six minutes; it highlighted how easily shared awareness drops when we are physically separated by partitions."
       ]
     },
     {
@@ -708,14 +708,15 @@
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 3.9,
-        "coordination_support": 3.4,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.0
+        "overall_experience": 4.6,
+        "coordination_support": 3.6,
+        "focus_support": 4.2,
+        "spatial_legibility": 4.9
       },
       "quotes": [
-        "The shift felt like a series of high-velocity transitions through a shared clinical circulation area that acted as both a thoroughfare and a de facto workspace.",
-        "The layout forced a trade-off where coordination often came at the cost of task focus. The shared clinical circulation area was a hub for both movement and interaction, making it difficult to sustain deep focus on patient evaluations."
+        "The layout forces a trade-off where protecting focus often means sacrificing coordination. I could maintain task continuity, but the opaque partitions and dispersed stations meant that coordinating with others required deliberate, often interrupted, travel.",
+        "The COCPIT coordination station was the most supportive feature. It provided a dedicated space for status updates and diagnostic discussions, as evidenced by the mutual visibility I had with a colleague there for 65 seconds.",
+        "I would introduce transparent partitions or open sightlines in the shared clinical circulation area to improve passive monitoring of colleague status. This would allow me to see who is available or busy without having to physically approach them, reducing the friction of coordination and the risk of missed opportunities."
       ]
     },
     {
@@ -725,103 +726,105 @@
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 4.5,
-        "coordination_support": 3.4,
-        "focus_support": 3.7,
-        "spatial_legibility": 5.4
-      },
-      "quotes": [
-        "The layout feels like a high-velocity loop between the COCPIT station and the right patient rooms. It is a rhythm of constant movement and intermittent visibility.",
-        "The COCPIT partitions are the most supportive feature. Their transparency for staff intervisibility allows me to scan for colleagues and assess the flow of the department without being physically present.",
-        "I would introduce a semi-transparent partition or visual barrier in the corridor near the COCPIT entrance to create a soft coordination zone. This would allow for quick, low-friction interactions without requiring a full trip to the COCPIT station or a deep dive into the patient rooms."
-      ]
-    },
-    {
-      "persona": "vigilant_monitor",
-      "scenario": "high_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.3,
-        "coordination_support": 4.0,
-        "focus_support": 3.5,
-        "spatial_legibility": 5.4
-      },
-      "quotes": [
-        "The shift felt like a series of high-velocity transitions between the nursing work area and the shared circulation space. I was constantly moving, with substantial contact activity in the circulation areas and the nursing work area, but limited visibility at the COCPIT and NURSTA stations.",
-        "The shared clinical circulation area was the most supportive feature. It provided substantial visibility and contact activity, allowing me to engage with colleagues about next steps, bed management, and diagnostics.",
-        "The nursing work area was the most difficult feature. Despite being a central hub, it had limited colleague visibility and presence."
-      ]
-    },
-    {
-      "persona": "vigilant_monitor",
-      "scenario": "high_load",
-      "condition": "nursta_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 3.8,
-        "coordination_support": 3.3,
-        "focus_support": 3.5,
-        "spatial_legibility": 4.4
-      },
-      "quotes": [
-        "The COCPIT coordination station served as a reliable anchor for status updates and escalation. Despite the general lack of visibility, this station provided a dedicated space for substantial contact activity, allowing me to quickly exchange critical information with colleagues when I needed to."
-      ]
-    },
-    {
-      "persona": "vigilant_monitor",
-      "scenario": "normal_load",
-      "condition": "baseline",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.3,
-        "coordination_support": 3.7,
-        "focus_support": 3.5,
-        "spatial_legibility": 5.2
-      },
-      "quotes": [
-        "The layout feels like a high-velocity loop between the patient rooms and the central hubs. I’m constantly shuttling between bedside care and the coordination station, with the nurse station acting as the anchor.",
-        "The COCPIT coordination station is the most supportive feature. It serves as a dedicated hub for planning and next steps, allowing me to connect with coordination nurses effectively.",
-        "I would introduce semi-transparent partitions or acoustic buffers in the right patient-room area to create a more focused environment for diagnostics and assessments. This would reduce the pull of the open circulation and allow for deeper task engagement without sacrificing the ability to see colleagues approaching."
-      ]
-    },
-    {
-      "persona": "vigilant_monitor",
-      "scenario": "normal_load",
-      "condition": "both",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.6,
-        "coordination_support": 4.2,
-        "focus_support": 4.0,
-        "spatial_legibility": 5.8
-      },
-      "quotes": [
-        "The shift felt like a series of high-velocity transitions between the nursing work area and the shared circulation space. I was constantly moving, with substantial contact activity in the circulation areas but limited visibility of colleagues.",
-        "The shared clinical circulation area was the most supportive feature because it facilitated substantial contact activity and allowed for quick, opportunistic interactions with colleagues and doctors.",
-        "Introducing a visual proximity alert system in the shared circulation area would best support my priorities by reducing blind spots and enabling timely, relevant contacts without requiring line-of-sight."
-      ]
-    },
-    {
-      "persona": "vigilant_monitor",
-      "scenario": "normal_load",
-      "condition": "cockpit_only",
-      "source": "verified_part3_appraisals",
-      "sample_size": 10,
-      "scores": {
-        "overall_experience": 4.6,
-        "coordination_support": 4.0,
+        "overall_experience": 4.9,
+        "coordination_support": 4.3,
         "focus_support": 3.8,
         "spatial_legibility": 5.7
       },
       "quotes": [
-        "The shift was defined by rapid transitions through shared circulation areas and coordination stations. I moved frequently between patient rooms, the COCPIT station, and the nursing work area.",
-        "The COCPIT partitions were most supportive. Their transparent configuration for staff intervisibility allowed me to maintain situational awareness of colleagues in the coordination station without being physically present.",
-        "Installing proximity sensors or visual indicators in the shared clinical circulation area would best support my priorities. This would reduce the ambiguity of colleague presence, allowing for more efficient decision-making on whether to engage or defer contact, thereby improving situational awareness."
+        "The shift felt defined by a rhythm of deliberate disengagement. I spent most of my time in the right patient-room area, where I could maintain task continuity without the constant pull of the coordination station.",
+        "The COCPIT partitions were the most supportive feature. They provided transparency for staff intervisibility, allowing me to see colleagues without being forced into interaction.",
+        "I would add a digital status board at the NURSTA station that updates in real-time with nurse availability and patient acuity. This would allow me to scan for weak signals and coordination needs without having to physically approach the desk, which is currently an obstacle."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 6.1,
+        "coordination_support": 5.1,
+        "focus_support": 6.0,
+        "spatial_legibility": 6.1
+      },
+      "quotes": [
+        "The shift felt defined by high-visibility movement in shared circulation areas. This dynamic environment maintained situational awareness through frequent interactions, balancing team coordination with the need for focused patient care tasks.",
+        "Open circulation supported coordination through high visibility. However, I frequently deferred optional contacts in the nursing work area to maintain focus.",
+        "I would add a semi-private nook in the shared circulation area for focused discussions. This improves coordination quality but might reduce spontaneous, low-stakes interactions that currently maintain team cohesion."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "high_load",
+      "condition": "nursta_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.1,
+        "coordination_support": 3.8,
+        "focus_support": 4.8,
+        "spatial_legibility": 5.1
+      },
+      "quotes": [
+        "The shift felt like a series of deliberate choices to preserve focus. I moved between the coordination station and patient rooms, constantly weighing whether a colleague’s presence warranted a stop.",
+        "The layout supported focus by allowing me to retreat to patient rooms, but coordination suffered in the circulation areas. I had substantial contact activity in shared spaces, yet many potential interactions were deferred or missed because partners were busy or moving.",
+        "I would introduce a 'focus mode' signal in the circulation areas, perhaps a wearable or digital status, to indicate when I am not available for optional contact."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "baseline",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.7,
+        "coordination_support": 4.6,
+        "focus_support": 5.8,
+        "spatial_legibility": 5.5
+      },
+      "quotes": [
+        "The shift felt like a series of high-velocity loops between the nurse station and patient rooms, with coordination happening in the margins. I maintained strong task continuity, but the environment demanded constant scanning for colleagues who were often just out of sight or moving too fast to catch.",
+        "The NURSTA nurse station was the most supportive feature. It served as the central hub for planning with doctors and nurses, and its substantial presence allowed for quick, face-to-face coordination when I was nearby.",
+        "Introducing semi-transparent partitions or visual markers at key corridor junctions would help signal colleague presence without requiring physical proximity, reducing missed opportunities during transitions."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "both",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.4,
+        "coordination_support": 4.6,
+        "focus_support": 5.4,
+        "spatial_legibility": 5.8
+      },
+      "quotes": [
+        "The shift felt defined by a rhythm of deliberate engagement rather than constant availability. I moved between the nursing work area and the shared circulation space, treating interactions as discrete events rather than continuous background noise.",
+        "The layout forced a binary choice: engage in the nursing work area or maintain focus in the circulation area. I frequently deferred optional contacts with nurses and doctors in the nursing work area because the timing or relevance didn't justify the interruption.",
+        "I would introduce a subtle, non-intrusive visibility indicator in the shared clinical circulation area, such as a digital status board or color-coded lighting, that shows when colleagues are present and their general availability."
+      ]
+    },
+    {
+      "persona": "vigilant_monitor",
+      "scenario": "normal_load",
+      "condition": "cockpit_only",
+      "source": "verified_part3_appraisals",
+      "sample_size": 10,
+      "scores": {
+        "overall_experience": 5.9,
+        "coordination_support": 4.9,
+        "focus_support": 6.1,
+        "spatial_legibility": 5.9
+      },
+      "quotes": [
+        "The layout felt like a high-velocity circuit where coordination and clinical work were inextricably linked. I spent most of my time shuttling between the right patient rooms and the central coordination hubs.",
+        "The COCPIT partitions were the most supportive feature. Their transparent configuration allowed for staff intervisibility, which was crucial for scanning for weak signals.",
+        "I would introduce a dedicated, semi-private huddle space adjacent to the COCPIT station. This would allow for brief, focused coordination discussions without the distractions of the open circulation area or the need to enter patient rooms."
       ]
     },
     {
@@ -831,15 +834,13 @@
       "source": "verified_part3_appraisals",
       "sample_size": 10,
       "scores": {
-        "overall_experience": 4.3,
-        "coordination_support": 3.8,
-        "focus_support": 3.9,
-        "spatial_legibility": 4.9
+        "overall_experience": 5.8,
+        "coordination_support": 4.3,
+        "focus_support": 5.7,
+        "spatial_legibility": 5.7
       },
       "quotes": [
-        "The nursing work area was the most supportive feature. It served as a stable anchor for planning and next-step discussions, allowing for substantive interaction with nurses that the transient circulation areas could not support.",
-        "The shared clinical circulation area was the most difficult. Despite being a hub of activity, it offered poor visibility for sustained collaboration and led to long periods of isolation from colleagues.",
-        "Introducing semi-transparent partitions or visual markers in the shared clinical circulation area to define 'focus zones' and 'contact zones' would best support my priorities."
+        "No grounded qualitative excerpt was retained for this cell."
       ]
     }
   ]

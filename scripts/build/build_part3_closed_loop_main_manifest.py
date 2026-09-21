@@ -24,12 +24,16 @@ FIELDNAMES = (
     "decision_window_seconds",
     "max_model_decisions_per_window",
     "model_decision_sample_rate",
+    "evolving_state_enabled",
+    "evolving_state_interval_seconds",
 )
 
 
-def build_rows(seed_count: int) -> list[dict[str, int | float | str]]:
-    if seed_count < 2:
-        raise ValueError("The paired main study requires at least two seeds")
+def build_rows(
+    seed_count: int, *, evolving_state: bool = True
+) -> list[dict[str, int | float | str | bool]]:
+    if seed_count < 1:
+        raise ValueError("seed_count must be positive")
     rows: list[dict[str, int | float | str]] = []
     # Interleave all conditions within each seed/round/scenario. Independent
     # workers may finish in any order, but every scheduling wave receives a
@@ -52,6 +56,8 @@ def build_rows(seed_count: int) -> list[dict[str, int | float | str]]:
                             "decision_window_seconds": 7200,
                             "max_model_decisions_per_window": 100,
                             "model_decision_sample_rate": 0.10,
+                            "evolving_state_enabled": evolving_state,
+                            "evolving_state_interval_seconds": 7200,
                         }
                     )
     expected = len(SCENARIOS) * len(CONDITIONS) * seed_count * len(ASSIGNMENT_ROUNDS)
@@ -70,12 +76,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed-count", type=int, default=10)
     parser.add_argument(
+        "--without-accumulated-experience",
+        action="store_true",
+        help="Build a diagnostic manifest without accumulated experience.",
+    )
+    parser.add_argument(
         "--output",
-        default="manifests/part3_closed_loop_main_n10.csv",
+        default="manifests/part3_evolving_main_n10.csv",
     )
     args = parser.parse_args()
     output = Path(args.output)
-    rows = build_rows(args.seed_count)
+    rows = build_rows(
+        args.seed_count,
+        evolving_state=not args.without_accumulated_experience,
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDNAMES)

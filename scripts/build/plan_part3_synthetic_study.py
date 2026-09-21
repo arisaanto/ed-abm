@@ -553,6 +553,16 @@ def _llm_visible_decision_evidence(
             ),
         },
         "memory_state_before": visible_memory,
+        "evolving_state_before": dict(
+            evidence.get("evolving_state_before")
+            or {
+                "coordination_need": 0,
+                "interruption_strain": 0,
+                "task_continuity": 0,
+                "team_support": 0,
+            }
+        ),
+        "evolving_state_semantics": EVOLVING_STATE_SEMANTICS,
     }
 
 
@@ -626,6 +636,101 @@ def scientific_decision_packet(persona, evidence: dict[str, Any]) -> dict[str, A
     """Build the preregistered categorical packet used by offline and live gates."""
 
     return _scientific_decision_packet(persona, evidence)
+
+
+EVOLVING_STATE_SEMANTICS = {
+    "coordination_need": (
+        "-2 means recent coordination needs appear well satisfied; 0 is neutral; "
+        "+2 means strong unmet coordination need"
+    ),
+    "interruption_strain": (
+        "-2 means little accumulated interruption strain; 0 is neutral; +2 means "
+        "high accumulated strain from optional contact decisions"
+    ),
+    "task_continuity": (
+        "-2 means task continuity has been disrupted; 0 is neutral; +2 means work "
+        "has maintained strong continuity"
+    ),
+    "team_support": (
+        "-2 means little recent support from colleague contact; 0 is neutral; +2 "
+        "means strong recent support from colleague contact"
+    ),
+}
+
+
+def scientific_state_update_packet(persona, request: Any) -> dict[str, Any]:
+    """Build a condition-blind, evidence-linked transient-state update packet."""
+
+    profile = persona.prompt_profile()
+    visible_events = []
+    for row in request.evidence:
+        visible_events.append(
+            {
+                key: value
+                for key, value in dict(row).items()
+                if key != "source_evidence_id"
+            }
+        )
+    evidence_ids = [str(row["evidence_id"]) for row in visible_events]
+    visible = {
+        "checkpoint_id": request.checkpoint_id,
+        "role": request.role,
+        "elapsed_window_seconds": request.timestep - request.window_start,
+        "prior_state": dict(request.prior_state),
+        "state_semantics": EVOLVING_STATE_SEMANTICS,
+        "events": visible_events,
+    }
+    constraints = [
+        "Use only the supplied events and prior state",
+        "Return all four state dimensions as integers from -2 to 2",
+        "Each dimension may stay unchanged or move by at most one step",
+        "Stable persona priorities remain fixed; update only transient shift state",
+        (
+            "For each changed dimension, cite at least one supplied evidence id "
+            "in that dimension's evidence list; leave an unchanged dimension's "
+            "evidence list empty"
+        ),
+        "Do not infer emotions, clinical outcomes, diagnoses, or unobserved events",
+        "Do not create a narrative or explanation",
+    ]
+    packet = {
+        "prompt_id": request.checkpoint_id,
+        "packet_type": "in_simulation_state_update",
+        "state_output_contract": "evidence_linked_bounded_state_v1",
+        "system_message": (
+            "You update a constrained synthetic agent's transient state inside an "
+            "Emergency Department simulation. Use only supplied evidence. Stable "
+            "persona priorities do not change. Return only schema-valid JSON."
+        ),
+        "user_message": "\n".join(
+            [
+                "Packet type: in_simulation_state_update",
+                *_orientation_prompt_lines(profile),
+                f"ABM role: {request.role}",
+                "State evidence: " + json.dumps(visible, sort_keys=True),
+                "Constraints:\n- " + "\n- ".join(constraints),
+            ]
+        ),
+        "role": request.role,
+        "user_model_profile": profile,
+        "llm_visible_evidence": visible,
+        "trace_evidence": {
+            "agent_id": request.agent_id,
+            "timestep": request.timestep,
+            "window_start": request.window_start,
+            "prior_state": dict(request.prior_state),
+            "events": [dict(row) for row in request.evidence],
+        },
+        "evidence_ids": evidence_ids,
+        "hard_constraints": constraints,
+        "fixture_only_not_scientific_data": False,
+        "synthetic_design_probe_not_human_data": True,
+        "condition_label_hidden_from_model": True,
+        "scenario_label_hidden_from_model": True,
+        "free_text_causal_state_excluded": True,
+    }
+    packet["estimated_tokens"] = estimate_context_tokens(packet)
+    return packet
 
 
 def _evidence_bucket(value: float, low_cut: float, high_cut: float) -> str:

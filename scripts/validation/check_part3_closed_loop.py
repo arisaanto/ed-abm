@@ -105,6 +105,8 @@ def check(args: argparse.Namespace) -> dict[str, Any]:
         _persona_assignment(simulation),
         max_decisions_per_run=args.max_decisions,
         max_decisions_per_agent=args.max_decisions_per_agent,
+        evolving_state_enabled=args.evolving_state,
+        evolving_state_interval_seconds=args.evolving_state_interval_seconds,
     )
     simulation.part3_cognitive_controller = controller
     simulation.run(args.seconds // config.TIMESTEP_SECONDS)
@@ -159,6 +161,7 @@ def check(args: argparse.Namespace) -> dict[str, Any]:
         "sampled_for_model",
         "decision_output_contract",
         "free_text_used_as_causal_input",
+        "evolving_state_before",
     }
     decision_shape_pass = bool(decisions) and all(
         set(row) == expected_decision_keys for row in decisions
@@ -261,6 +264,22 @@ def check(args: argparse.Namespace) -> dict[str, Any]:
         errors.append(f"movement/contact integrity gate failed: {hard_gate_values}")
     if str(workflow.get("workflow_health_status")) == "FAIL":
         errors.append("workflow health failed")
+    if args.evolving_state:
+        expected_checkpoints = args.seconds // args.evolving_state_interval_seconds
+        if controller_summary.get("evolving_state_checkpoint_count") != expected_checkpoints:
+            errors.append("evolving-state checkpoint count is incorrect")
+        if len(controller.evolving_state_log) != (
+            expected_checkpoints * len(simulation.staff_agents)
+        ):
+            errors.append("evolving-state log does not cover every agent/checkpoint")
+        for row in controller.evolving_state_log:
+            prior = row["prior_state"]
+            state = row["state"]
+            if set(prior) != set(state) or any(
+                abs(int(state[name]) - int(prior[name])) > 1 for name in state
+            ):
+                errors.append("evolving-state transition exceeded its bounds")
+                break
 
     return {
         "check_name": "part3_closed_loop_mock_integrity",
@@ -293,6 +312,8 @@ def main() -> int:
     parser.add_argument("--condition", default="baseline")
     parser.add_argument("--max-decisions", type=int, default=500)
     parser.add_argument("--max-decisions-per-agent", type=int, default=100)
+    parser.add_argument("--evolving-state", action="store_true")
+    parser.add_argument("--evolving-state-interval-seconds", type=int, default=7200)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = check(args)

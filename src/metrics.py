@@ -9,7 +9,7 @@ from typing import Dict, Iterable, Mapping
 import numpy as np
 
 import config
-from src.analysis import cosine_similarity
+from src.analysis import compute_kde_grid, cosine_similarity
 from src.empirical import classify_zone_supergroup
 
 
@@ -58,6 +58,12 @@ def compute_summary_statistics(interactions: Iterable[dict], simulation) -> dict
                 "q75": float(np.quantile(durations, 0.75)),
             }
 
+    interaction_points = [
+        (float(event["x"]), float(event["y"]))
+        for event in interactions
+        if event.get("x") not in (None, "") and event.get("y") not in (None, "")
+    ]
+
     return {
         "zone_histogram": _normalize_counter(zone_counts),
         "role_pair_matrix": _normalize_counter(
@@ -66,7 +72,15 @@ def compute_summary_statistics(interactions: Iterable[dict], simulation) -> dict
         "topic_distribution": _normalize_counter(topic_counts),
         "topic_by_zone": topic_by_zone,
         "duration_quantiles": duration_quantiles,
-        "kde_grid": np.asarray(simulation.compute_kde_grid(), dtype=float).tolist(),
+        "kde_grid": np.asarray(
+            compute_kde_grid(
+                interaction_points,
+                simulation.environment.plot_bounds,
+                resolution=1.0,
+                bandwidth=1.5,
+            ),
+            dtype=float,
+        ).tolist(),
         "movement_metrics": simulation.movement_metrics(),
         "llm_metrics": simulation.llm_metrics(),
         "interaction_count": len(interactions),

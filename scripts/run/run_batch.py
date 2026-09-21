@@ -81,6 +81,8 @@ def _command_for_row(row: dict[str, str], output_root: Path | None) -> list[str]
         cmd.extend(["--run-id", row["run_id"]])
     if row.get("validation_target"):
         cmd.extend(["--validation-target", row["validation_target"]])
+    if _truthy(row.get("isolate_exogenous_arrival_stream", "")):
+        cmd.append("--isolate-exogenous-arrival-stream")
     if row.get("sensitivity_parameter"):
         cmd.extend(["--sensitivity-parameter", row["sensitivity_parameter"]])
         cmd.extend(["--sensitivity-level", row["sensitivity_level"]])

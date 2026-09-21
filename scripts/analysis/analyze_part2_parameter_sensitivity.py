@@ -381,7 +381,7 @@ def _plot_verdict_matrix(verdicts: pd.DataFrame, out_dir: Path) -> None:
             ax.text(j, i, str(row[column]), ha="center", va="center", fontsize=6)
     ax.tick_params(length=0)
     fig.tight_layout()
-    for extension in ("png", "svg", "pdf"):
+    for extension in ("png", "pdf"):
         kwargs = {"dpi": 320} if extension == "png" else {}
         fig.savefig(out_dir / f"parameter_sensitivity_verdict_matrix.{extension}", **kwargs)
     plt.close(fig)
@@ -427,7 +427,7 @@ def _plot_f2f_supplement(effects: pd.DataFrame, out_dir: Path) -> None:
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False, fontsize=8)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
-    for extension in ("png", "svg", "pdf"):
+    for extension in ("png", "pdf"):
         kwargs = {"dpi": 320} if extension == "png" else {}
         fig.savefig(out_dir / f"supplement_delta_f2f_response.{extension}", **kwargs)
     plt.close(fig)

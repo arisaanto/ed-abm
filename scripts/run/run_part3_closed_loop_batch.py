@@ -34,10 +34,12 @@ from scripts.run.run_part3_closed_loop import (
     _persona_assignment,
     _validate_runtime_contract,
 )
+from scripts.build.plan_part3_synthetic_study import scientific_decision_packet
 from scripts.run.run_single import run_single
 from scripts.validation.verify_part3_closed_loop_gate import verify as verify_run
 from src.part3_closed_loop import Part3ClosedLoopController
 from src.vllm_backend import VLLMOfflineBackend
+from src.personas import cognitive_persona_by_id
 
 
 INTEGER_FIELDS = (
@@ -74,6 +76,14 @@ def _read_manifest(path: Path) -> list[dict[str, Any]]:
             row[field] = int(row[field])
         for field in FLOAT_FIELDS:
             row[field] = float(row[field])
+        row["evolving_state_enabled"] = str(
+            raw.get("evolving_state_enabled", "false")
+        ).strip().lower() in {"1", "true", "yes"}
+        row["evolving_state_interval_seconds"] = int(
+            raw.get("evolving_state_interval_seconds", 7200)
+        )
+        if row["evolving_state_interval_seconds"] <= 0:
+            raise ValueError("evolving_state_interval_seconds must be positive")
         if row["scenario"] not in config.SCENARIO_MODES:
             raise ValueError(f"Unknown scenario: {row['scenario']}")
         if row["condition"] not in CONDITIONS:
@@ -127,6 +137,129 @@ def _run_dir(output_root: Path, row: dict[str, Any]) -> Path:
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+    )
+
+
+def _run_state_ablation(
+    output_root: Path, backend: VLLMOfflineBackend, sample_per_persona: int
+) -> dict[str, Any]:
+    """Re-evaluate stateful decisions with transient state reset to neutral."""
+
+    if sample_per_persona <= 0:
+        return {"enabled": False, "sample_count": 0}
+    candidates: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(output_root.rglob("part3_provider_inference.jsonl")):
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            request = row.get("request", {})
+            state = request.get("evidence", {}).get("evolving_state_before", {})
+            persona_id = str(request.get("persona_id", ""))
+            if persona_id and any(int(value) != 0 for value in state.values()):
+                candidates.setdefault(persona_id, []).append(row)
+    selected = []
+    for persona_id in sorted(cognitive_persona_by_id()):
+        ranked = sorted(
+            candidates.get(persona_id, []),
+            key=lambda row: hashlib.sha256(
+                str(row.get("request", {}).get("decision_id", "")).encode("utf-8")
+            ).hexdigest(),
+        )
+        selected.extend(ranked[:sample_per_persona])
+    if not selected:
+        raise RuntimeError("No non-neutral decisions were available for state ablation")
+    personas = cognitive_persona_by_id()
+    packets = []
+    for row in selected:
+        request = row["request"]
+        evidence = dict(request["evidence"])
+        evidence["evolving_state_before"] = {
+            "coordination_need": 0,
+            "interruption_strain": 0,
+            "task_continuity": 0,
+            "team_support": 0,
+        }
+        packets.append(
+            scientific_decision_packet(
+                personas[str(request["persona_id"])], evidence
+            )
+        )
+    results = backend.generate_prompt_packets(packets)
+    rows = []
+    action_changes = 0
+    reason_changes = 0
+    topic_changes = 0
+    by_persona: dict[str, Counter[str]] = {}
+    for original, packet, result in zip(selected, packets, results):
+        request = original["request"]
+        persona_id = str(request["persona_id"])
+        original_response = original["result"]["response"]
+        neutral_response = result["response"]
+        changed_action = (
+            original_response["selected_action"]
+            != neutral_response["selected_action"]
+        )
+        changed_reason = (
+            original_response["selected_reason"]
+            != neutral_response["selected_reason"]
+        )
+        changed_topic = (
+            original_response["topic_family"]
+            != neutral_response["topic_family"]
+        )
+        action_changes += int(changed_action)
+        reason_changes += int(changed_reason)
+        topic_changes += int(changed_topic)
+        counts = by_persona.setdefault(persona_id, Counter())
+        counts["sample_count"] += 1
+        counts["action_changes"] += int(changed_action)
+        rows.append(
+            {
+                "decision_id": request["decision_id"],
+                "persona_id": persona_id,
+                "stateful_state": request["evidence"]["evolving_state_before"],
+                "stateful_response": original_response,
+                "neutral_state_response": neutral_response,
+                "action_changed": changed_action,
+                "reason_changed": changed_reason,
+                "topic_changed": changed_topic,
+                "neutral_packet_sha256": hashlib.sha256(
+                    json.dumps(packet, sort_keys=True).encode("utf-8")
+                ).hexdigest(),
+            }
+        )
+    _write_jsonl(output_root / "state_ablation_responses.jsonl", rows)
+    summary = {
+        "enabled": True,
+        "contract": "matched_same_opportunity_stateful_vs_neutral_v1",
+        "sample_per_persona_requested": sample_per_persona,
+        "sample_count": len(rows),
+        "action_change_count": action_changes,
+        "action_change_rate": action_changes / len(rows),
+        "reason_change_count": reason_changes,
+        "reason_change_rate": reason_changes / len(rows),
+        "topic_change_count": topic_changes,
+        "topic_change_rate": topic_changes / len(rows),
+        "by_persona": {
+            persona_id: {
+                **dict(counts),
+                "action_change_rate": (
+                    counts["action_changes"] / counts["sample_count"]
+                ),
+            }
+            for persona_id, counts in sorted(by_persona.items())
+        },
+        "scientific_result": False,
+        "purpose": "architecture_sufficiency_gate",
+    }
+    _write_json(output_root / "state_ablation_summary.json", summary)
+    return summary
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -352,6 +485,10 @@ def _simulation_worker(
                     "model_decision_sample_rate"
                 ],
                 sampling_replication_id=row["assignment_round"],
+                evolving_state_enabled=row["evolving_state_enabled"],
+                evolving_state_interval_seconds=row[
+                    "evolving_state_interval_seconds"
+                ],
             )
 
         summary = run_single(
@@ -727,6 +864,12 @@ def parse_args() -> argparse.Namespace:
         choices=("eager", "prefetch", "lazy", "default"),
         default="eager",
     )
+    parser.add_argument(
+        "--state-ablation-sample-per-persona",
+        type=int,
+        default=0,
+        help="Matched neutral-state re-evaluations per persona after the batch",
+    )
     parser.add_argument("--disable-prefix-caching", action="store_true")
     parser.add_argument("--max-workers", type=int, default=20)
     parser.add_argument("--inference-batch-wait-ms", type=float, default=50.0)
@@ -971,6 +1114,9 @@ def main() -> None:
         prior_progress=prior_progress,
         total_expected_run_count=len(rows),
     )
+    state_ablation = _run_state_ablation(
+        output_root, backend, args.state_ablation_sample_per_persona
+    )
 
     _write_json(
         output_root / "batch_execution.json",
@@ -986,6 +1132,7 @@ def main() -> None:
             "total_elapsed_seconds": time.perf_counter() - batch_started,
             "completed_at_utc": datetime.now(timezone.utc).isoformat(),
             **broker_summary,
+            "state_ablation": state_ablation,
             "runs": completed,
         },
     )

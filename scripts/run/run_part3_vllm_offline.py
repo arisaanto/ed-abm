@@ -255,6 +255,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-model-len", type=int, default=config.VLLM_MAX_MODEL_LEN)
     parser.add_argument("--max-output-tokens", type=int, default=config.VLLM_MAX_OUTPUT_TOKENS)
     parser.add_argument("--gpu-memory-utilization", type=float, default=config.VLLM_GPU_MEMORY_UTILIZATION)
+    parser.add_argument(
+        "--disable-custom-all-reduce",
+        action="store_true",
+        help="Use the standard NCCL all-reduce path instead of optional custom kernels.",
+    )
+    parser.add_argument(
+        "--gdn-prefill-backend",
+        choices=("flashinfer", "triton", "cutedsl"),
+        help="Select the GDN prefill kernel explicitly when the platform default is unavailable.",
+    )
+    parser.add_argument(
+        "--enforce-eager",
+        action="store_true",
+        help="Disable graph compilation and CUDA graphs for compatibility-focused runs.",
+    )
+    parser.add_argument(
+        "--disable-fused-allreduce-rms",
+        action="store_true",
+        help="Disable the optional compiled all-reduce/RMS fusion.",
+    )
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument(
         "--semantic-retries",
@@ -308,6 +328,10 @@ def main() -> None:
         gpu_memory_utilization=args.gpu_memory_utilization,
         max_output_tokens=args.max_output_tokens,
         enable_thinking=args.enable_thinking,
+        disable_custom_all_reduce=args.disable_custom_all_reduce,
+        gdn_prefill_backend=args.gdn_prefill_backend,
+        enforce_eager=args.enforce_eager,
+        disable_fused_allreduce_rms=args.disable_fused_allreduce_rms,
         max_semantic_retries=args.semantic_retries,
     )
     reusable_by_id: dict[str, dict[str, Any]] = {}
@@ -340,6 +364,10 @@ def main() -> None:
         "tensor_parallel_size": args.tensor_parallel_size,
         "max_model_len": args.max_model_len,
         "max_output_tokens": args.max_output_tokens,
+        "custom_all_reduce_disabled": args.disable_custom_all_reduce,
+        "gdn_prefill_backend": args.gdn_prefill_backend,
+        "eager_execution": args.enforce_eager,
+        "fused_allreduce_rms_disabled": args.disable_fused_allreduce_rms,
         "thinking_enabled": args.enable_thinking,
         "decoding": "greedy_schema_constrained",
         "sampling_temperature": 0.0,

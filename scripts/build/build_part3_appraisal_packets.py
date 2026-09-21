@@ -122,7 +122,12 @@ def _load_agent_shifts(results_root: Path) -> list[dict[str, Any]]:
         run_dir = map_path.parent
         event_path = run_dir / "part3_experience_events.jsonl"
         summary_path = run_dir / "part3_agent_experience.jsonl"
-        if not event_path.exists() or not summary_path.exists():
+        accumulated_experience_path = run_dir / "part3_evolving_state.jsonl"
+        if (
+            not event_path.exists()
+            or not summary_path.exists()
+            or not accumulated_experience_path.exists()
+        ):
             raise FileNotFoundError(
                 f"Incomplete Part 3 experience evidence in {run_dir}"
             )
@@ -146,6 +151,9 @@ def _load_agent_shifts(results_root: Path) -> list[dict[str, Any]]:
                     "map": experience_map,
                     "summary": summary,
                     "event_path": str(event_path),
+                    "accumulated_experience_path": str(
+                        accumulated_experience_path
+                    ),
                 }
             )
     return shifts
@@ -170,6 +178,20 @@ def _load_selected_agent_events(shift: Mapping[str, Any]) -> list[dict[str, Any]
             if int(row["agent_id"]) == agent_id:
                 events.append(row)
     return events
+
+
+def _load_selected_accumulated_experience(
+    shift: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Load the five evidence-linked experience checkpoints for one staff member."""
+
+    agent_id = int(shift["map"]["agent_id"])
+    rows = [
+        row
+        for row in _read_jsonl(Path(str(shift["accumulated_experience_path"])))
+        if int(row["agent_id"]) == agent_id
+    ]
+    return sorted(rows, key=lambda row: int(row["timestep"]))
 
 
 def _select_balanced_shifts(
@@ -628,6 +650,41 @@ def _visible_experience(
             "these cards is not proof that an event never occurred."
         ),
     }
+    experience_checkpoints = []
+    for row in shift.get("accumulated_experience", []):
+        values = row["state"]
+        experience_checkpoints.append(
+            {
+                "hours_into_evaluated_shift": round(
+                    (int(row["timestep"]) - window_start) / 3600, 1
+                ),
+                "unmet_coordination_need": int(values["coordination_need"]),
+                "interruption_strain": int(values["interruption_strain"]),
+                "task_continuity": int(values["task_continuity"]),
+                "team_support": int(values["team_support"]),
+            }
+        )
+    visible["accumulated_experience"] = {
+        "scale": (
+            "Each measure ranges from -2 to +2. Zero means that no positive or "
+            "negative effect had accumulated at that checkpoint."
+        ),
+        "meanings": {
+            "unmet_coordination_need": (
+                "higher values mean stronger unmet coordination needs"
+            ),
+            "interruption_strain": (
+                "higher values mean greater strain from optional interruptions"
+            ),
+            "task_continuity": (
+                "higher values mean work maintained stronger continuity"
+            ),
+            "team_support": (
+                "higher values mean stronger support from recent colleague contact"
+            ),
+        },
+        "checkpoints": experience_checkpoints,
+    }
     return visible, id_map
 
 
@@ -785,6 +842,9 @@ def build_packets(args: argparse.Namespace) -> dict[str, Any]:
     for shift in selected:
         selected_shift = dict(shift)
         selected_shift["events"] = _load_selected_agent_events(shift)
+        selected_shift["accumulated_experience"] = (
+            _load_selected_accumulated_experience(shift)
+        )
         visible, id_map = _visible_experience(
             selected_shift, max_events=args.max_events
         )
@@ -827,6 +887,9 @@ def build_packets(args: argparse.Namespace) -> dict[str, Any]:
                 "redundant_travel_wording_count": redundant_travel_wording_count,
                 "uninformative_travel_count": uninformative_travel_count,
                 "internal_label_count": internal_label_count,
+                "accumulated_experience_checkpoint_count": len(
+                    selected_shift["accumulated_experience"]
+                ),
             }
         )
         for builder in (_survey_packet, _interview_packet):
@@ -879,6 +942,10 @@ def build_packets(args: argparse.Namespace) -> dict[str, Any]:
     internal_label_shift_count = sum(
         row["internal_label_count"] > 0 for row in evidence_audits
     )
+    incomplete_accumulated_experience_shift_count = sum(
+        row["accumulated_experience_checkpoint_count"] != 5
+        for row in evidence_audits
+    )
     evidence_audit_pass = not (
         missing_phase_shift_count
         or duplicate_place_label_shift_count
@@ -886,6 +953,7 @@ def build_packets(args: argparse.Namespace) -> dict[str, Any]:
         or redundant_travel_wording_shift_count
         or uninformative_travel_shift_count
         or internal_label_shift_count
+        or incomplete_accumulated_experience_shift_count
     )
     preflight = {
         "preflight_pass": (
@@ -914,6 +982,9 @@ def build_packets(args: argparse.Namespace) -> dict[str, Any]:
             ),
             "uninformative_travel_shift_count": uninformative_travel_shift_count,
             "internal_label_shift_count": internal_label_shift_count,
+            "incomplete_accumulated_experience_shift_count": (
+                incomplete_accumulated_experience_shift_count
+            ),
             "minimum_representative_event_count": min(
                 (row["event_count"] for row in evidence_audits), default=0
             ),

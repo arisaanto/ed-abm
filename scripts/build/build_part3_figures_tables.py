@@ -45,9 +45,8 @@ import pandas as pd
 from PIL import Image
 
 
-DEFAULT_MAIN_SOURCE = SOURCE_RESULTS_DIR / "part3_closed_loop_main_n10_24719095.tar.gz"
-DEFAULT_APPRAISAL_SOURCE = SOURCE_RESULTS_DIR / "part3_appraisals_final_24789077.tar.gz"
-DEFAULT_ABLATION_SOURCE = SOURCE_RESULTS_DIR / "part3_architecture_ablation_v2_24817925.tar.gz"
+DEFAULT_MAIN_SOURCE = SOURCE_RESULTS_DIR / "part3_evolving_main_n10"
+DEFAULT_APPRAISAL_SOURCE = SOURCE_RESULTS_DIR / "part3_evolving_appraisals_n10"
 DEFAULT_OUTPUT_DIR = PROJECT_DIR / "outputs" / "findings" / "part3_cognitive_personas_n10"
 DEFAULT_STUDY_FIGURES_DIR = (
     PROJECT_DIR / "outputs" / "findings" / "study_overview" / "figures"
@@ -66,18 +65,32 @@ DEFAULT_REVIEWED_INTERVIEWS = DEFAULT_REVIEW_DIR / "reviewed_interview_sample.cs
 DEFAULT_REVIEWED_COUNTERFACTUALS = (
     DEFAULT_REVIEW_DIR / "reviewed_counterfactual_codes.csv"
 )
+DEFAULT_MATCHED_ENGAGEMENT = (
+    PROJECT_DIR
+    / "outputs"
+    / "audit"
+    / "part3_evolving_opportunity_matched_role_reason_partner"
+    / "opportunity_matched_engagement.csv"
+)
+DEFAULT_COMMON_SITUATION_AUDIT = (
+    PROJECT_DIR
+    / "outputs"
+    / "audit"
+    / "part3_common_situation_audit"
+    / "common_situation_construct_checks.csv"
+)
 
 # Authorized aggregate comparison only. The underlying hospital questionnaire
 # rows remain in the restricted local source data and are never read by this
 # public findings builder.
 QUESTIONNAIRE_CONVERGENCE_ROWS = (
-    ("Maximum workload", 4.57, 1.55, 4.01, 1.88, 0.56, "1-7"),
-    ("Critically high workload", 28.57, 29.18, 25.00, 27.78, 3.57, "percent"),
-    ("Concentration", 5.00, 1.15, 5.17, 1.54, 0.17, "1-7"),
-    ("Communication satisfaction", 4.77, 1.42, 5.08, 0.67, 0.31, "1-7"),
-    ("Teamwork", 5.15, 1.21, 5.03, 0.47, 0.12, "1-7"),
-    ("Helpfulness to patients", 5.15, 0.80, 5.22, 0.67, 0.07, "1-7"),
-    ("Information sufficiency", 5.31, 1.03, 5.04, 0.67, 0.27, "1-7"),
+    ("Maximum workload", 4.57, 1.55, 4.03, 1.89, 0.54, "1-7"),
+    ("Critically high workload", 28.57, 29.18, 25.54, 24.94, 3.04, "percent"),
+    ("Concentration", 5.00, 1.15, 5.02, 1.43, 0.02, "1-7"),
+    ("Communication satisfaction", 4.77, 1.42, 5.07, 0.66, 0.30, "1-7"),
+    ("Teamwork", 5.15, 1.21, 5.04, 0.48, 0.11, "1-7"),
+    ("Helpfulness to patients", 5.15, 0.80, 5.28, 0.58, 0.12, "1-7"),
+    ("Information sufficiency", 5.31, 1.03, 5.01, 0.53, 0.30, "1-7"),
 )
 
 SCENARIOS = ("normal_load", "high_load_high_acuity")
@@ -512,8 +525,8 @@ def _write_table(
     note: str,
     bold_columns: Sequence[str] = (),
     bold_cells: set[tuple[int, str]] | None = None,
-    latex: bool = True,
-    markdown: bool = True,
+    latex: bool = False,
+    markdown: bool = False,
 ) -> None:
     base_path.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(base_path.with_suffix(".csv"), index=False)
@@ -541,7 +554,7 @@ def _write_table(
 def _validate_sources(
     main_summary: Mapping[str, Any],
     appraisal_summary: Mapping[str, Any],
-    ablation_summary: Mapping[str, Any],
+    experience_ablation: Mapping[str, Any],
 ) -> None:
     if main_summary.get("analysis_pass") is not True or main_summary.get("run_count") != 400:
         raise ValueError("The accepted 400-run Part 3 main analysis is not complete")
@@ -558,8 +571,12 @@ def _validate_sources(
     }
     if appraisal_summary.get("analysis_pass") is not True or not required_dimensions <= complete:
         raise ValueError("Required Part 3 appraisal dimensions are not fully estimable")
-    if ablation_summary.get("analysis_pass") is not True:
-        raise ValueError("The matched Part 3 architecture ablation is not complete")
+    if (
+        experience_ablation.get("enabled") is not True
+        or experience_ablation.get("sample_count") != 500
+        or experience_ablation.get("action_change_count", 0) <= 0
+    ):
+        raise ValueError("The matched accumulated-experience check is incomplete")
 
 
 def _load_template(path: Path) -> dict[str, Any]:
@@ -730,11 +747,8 @@ def _diagram_box(
         ha="left",
         va="center",
         fontsize=heading_size,
-        fontweight="heavy",
+        fontweight="bold",
         color=heading_color,
-        path_effects=[
-            path_effects.withStroke(linewidth=0.28, foreground=heading_color)
-        ],
         zorder=zorder + 1,
     )
     if detail:
@@ -801,11 +815,8 @@ def _diagram_inner_box(
         ha="left",
         va="center",
         fontsize=heading_size,
-        fontweight="heavy",
+        fontweight="bold",
         color=COLORS["ink"],
-        path_effects=[
-            path_effects.withStroke(linewidth=0.24, foreground=COLORS["ink"])
-        ],
         zorder=zorder + 1,
     )
     axis.text(
@@ -1126,11 +1137,8 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
             heading_y,
             heading,
             fontsize=9.0,
-            fontweight="heavy",
+            fontweight="bold",
             color=COLORS["ink"],
-            path_effects=[
-                path_effects.withStroke(linewidth=0.30, foreground=COLORS["ink"])
-            ],
             ha="left",
             va="center",
             zorder=3,
@@ -1144,13 +1152,13 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
         prerequisite_y,
         prerequisite_w,
         prerequisite_h,
-        "Interaction prerequisites",
+        "What must be true first",
         input_fill,
     )
     prerequisite_rows = (
         ("Proximity", "Partners are close enough"),
         ("Mutual visibility", "Condition-specific sightline"),
-        ("Operational feasibility", "Task, pressure, and repeat-contact gates"),
+        ("Available to respond", "Current task, workload, and recent contact"),
     )
     prerequisite_row_height = 0.085
     prerequisite_gap = 0.018
@@ -1218,15 +1226,15 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
     single_detail_stage(
         0.315,
         0.19,
-        "Actionable opportunity",
-        "A feasible staff contact\nat a specific time and place",
+        "Chance to interact",
+        "A colleague can be approached\nat this time and place",
         opportunity_fill,
     )
     _diagram_arrow(axis, (0.505, flow_y), (0.555, flow_y))
     single_detail_stage(
         0.555,
         0.17,
-        "Bounded decision",
+        "Optional choice",
         "Engage, defer, or decline\nReason and topic",
         policy_fill,
     )
@@ -1243,7 +1251,7 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
         record_fill,
     )
     outcome_rows = (
-        ("F2F interaction", "Time, coordinate, partners,\nreason, and topic"),
+        ("Face-to-face interaction", "Time, coordinate, partners,\nreason, and topic"),
         ("Missed opportunity", "Time, coordinate, partners,\nand non-contact reason"),
     )
     outcome_row_height = 0.135
@@ -1265,7 +1273,7 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
     for x, label in (
         (0.145, "SPACE AND WORKFLOW"),
         (0.410, "OPPORTUNITY"),
-        (0.640, "COGNITIVE OR RULE POLICY"),
+        (0.640, "DECISION RULE"),
         (0.875, "EVENT RECORD"),
     ):
         axis.text(
@@ -1273,11 +1281,8 @@ def _plot_interaction_pipeline(study_figures_dir: Path) -> None:
             0.785,
             label,
             fontsize=7.2,
-            fontweight="heavy",
+            fontweight="bold",
             color=COLORS["ink"],
-            path_effects=[
-                path_effects.withStroke(linewidth=0.30, foreground=COLORS["ink"])
-            ],
             ha="center",
             va="center",
         )
@@ -1317,11 +1322,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.875,
         "DURING THE SHIFT",
         fontsize=7.2,
-        fontweight="heavy",
+        fontweight="bold",
         color=COLORS["ink"],
-        path_effects=[
-            path_effects.withStroke(linewidth=0.30, foreground=COLORS["ink"])
-        ],
         ha="left",
     )
     _diagram_box(
@@ -1330,8 +1332,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.645,
         0.17,
         0.155,
-        "Feasible opportunity",
-        "ABM supplies partner,\nplace, task, and urgency",
+        "Chance to interact",
+        "The model supplies colleague,\nplace, task, and urgency",
         facecolor="#F3F3F0",
         heading_size=8.4,
         detail_size=6.7,
@@ -1342,8 +1344,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.645,
         0.19,
         0.155,
-        "Cognitive context",
-        "Orientation and recent\nrealized contacts",
+        "Persona and experience",
+        "Persona prompt, recent contacts,\nand accumulated experience",
         facecolor="#E3F1EF",
         heading_size=8.4,
         detail_size=6.7,
@@ -1354,8 +1356,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.645,
         0.17,
         0.155,
-        "Bounded LLM policy",
-        "Action, reason, and topic\nwith cited evidence",
+        "Sampled choice",
+        "A language model chooses an action,\nreason, and topic from the evidence",
         facecolor="#E7EBF0",
         heading_size=8.5,
         detail_size=6.7,
@@ -1398,7 +1400,7 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
     axis.text(
         0.61,
         0.568,
-        "Only realized contacts become causal memory",
+        "Every two hours, recent choices and completed contacts update four bounded experience values",
         fontsize=6.6,
         color=COLORS["ink"],
         ha="center",
@@ -1409,17 +1411,14 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.375,
         "AFTER THE SHIFT",
         fontsize=7.2,
-        fontweight="heavy",
+        fontweight="bold",
         color=COLORS["ink"],
-        path_effects=[
-            path_effects.withStroke(linewidth=0.30, foreground=COLORS["ink"])
-        ],
         ha="left",
     )
     axis.text(
         0.96,
         0.375,
-        "Read-only: appraisal never alters the completed trajectory",
+        "Read-only: ratings never change the completed shift",
         fontsize=6.5,
         color=COLORS["ink"],
         ha="right",
@@ -1430,8 +1429,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.14,
         0.20,
         0.155,
-        "Episodic spatial experience",
-        "Travel, visibility, tasks, contacts,\nmissed opportunities, and places",
+        "Completed shift record",
+        "Travel, visibility, tasks, contacts,\nmissed chances, places, and experience",
         facecolor="#F3F3F0",
         heading_size=8.4,
         detail_size=6.7,
@@ -1442,8 +1441,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.14,
         0.17,
         0.155,
-        "Evidence retrieval",
-        "Representative events and\nplace-linked summaries",
+        "Evidence selection",
+        "Representative events and\nplace-based summaries",
         facecolor="#E3F1EF",
         heading_size=8.4,
         detail_size=6.7,
@@ -1454,8 +1453,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.14,
         0.20,
         0.155,
-        "Appraisal and interview",
-        "Seven structured scores\nand synthetic responses",
+        "Synthetic rating",
+        "Seven structured scores\nand written responses",
         facecolor="#E7EBF0",
         heading_size=8.4,
         detail_size=6.7,
@@ -1466,8 +1465,8 @@ def _plot_cognitive_architecture(figures_dir: Path) -> None:
         0.14,
         0.17,
         0.155,
-        "Claim layers",
-        "Pattern and interpretation\nNeed and design hypothesis",
+        "Separated claims",
+        "Recorded pattern, interpretation,\nneed, and design suggestion",
         facecolor="#ECE9F2",
         heading_size=8.4,
         detail_size=6.5,
@@ -1500,7 +1499,6 @@ def _effect_row(
 
 def _plot_exposure_uptake(
     experience_effects: pd.DataFrame,
-    persona_effects: pd.DataFrame,
     figures_dir: Path,
 ) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.65))
@@ -1508,32 +1506,36 @@ def _plot_exposure_uptake(
     x_positions = np.arange(len(PERSONAS), dtype=float)
     width = 0.32
     panel_specs = (
-        (
-            axes[0],
-            experience_effects,
-            "Share of time with a mutually visible colleague",
-            "Time with a visible colleague",
-        ),
-        (
-            axes[1],
-            persona_effects,
-            "Role-standardized model engagement-rate change",
-            "LLM engagement rate",
-        ),
+        (axes[0], "Time with a visible colleague"),
+        (axes[1], "Additional persona-initiated contacts"),
     )
-    for axis, source, outcome, panel_label in panel_specs:
+    for panel_index, (axis, panel_label) in enumerate(panel_specs):
         axis.axhline(0, color="#A6A6A2", linewidth=0.8, linestyle=(0, (2, 2)))
         for persona_index, persona in enumerate(PERSONAS):
             for scenario_index, scenario in enumerate(SCENARIOS):
-                result = _effect_row(
-                    source,
-                    scenario=scenario,
-                    persona=persona,
-                    outcome=outcome,
-                )
-                mean = 100.0 * float(result["mean_delta"])
-                low = 100.0 * float(result["ci95_low"])
-                high = 100.0 * float(result["ci95_high"])
+                if panel_index == 0:
+                    result = _effect_row(
+                        experience_effects,
+                        scenario=scenario,
+                        persona=persona,
+                        outcome="Share of time with a mutually visible colleague",
+                    )
+                    mean = 100.0 * float(result["mean_delta"])
+                    low = 100.0 * float(result["ci95_low"])
+                    high = 100.0 * float(result["ci95_high"])
+                else:
+                    result = _effect_row(
+                        experience_effects,
+                        scenario=scenario,
+                        persona=persona,
+                        outcome="Model-realized initiated interactions per agent-hour",
+                    )
+                    # Express the paired effect over ten agent-hours so the
+                    # small but substantively useful between-persona differences
+                    # are legible without changing the underlying estimate.
+                    mean = 10.0 * float(result["mean_delta"])
+                    low = 10.0 * float(result["ci95_low"])
+                    high = 10.0 * float(result["ci95_high"])
                 x = x_positions[persona_index] + (-0.5 if scenario_index == 0 else 0.5) * width
                 alpha = 0.96 if scenario_index == 0 else 0.44
                 axis.bar(
@@ -1565,7 +1567,7 @@ def _plot_exposure_uptake(
             ha="left",
             va="top",
             fontsize=9.2,
-            fontweight="bold",
+            fontweight="normal",
             color=COLORS["ink"],
         )
         axis.set_xticks(
@@ -1573,7 +1575,12 @@ def _plot_exposure_uptake(
             [PERSONA_LABELS[item].replace(" ", "\n") for item in PERSONAS],
         )
         axis.tick_params(axis="x", length=0, pad=7)
-        axis.set_ylabel("Change (percentage points)", labelpad=8)
+        axis.set_ylabel(
+            "Change (percentage points)"
+            if panel_index == 0
+            else "Change per 10 agent-hours",
+            labelpad=8,
+        )
         axis.grid(axis="y", color="#ECECE8", linewidth=0.65)
         axis.set_axisbelow(True)
         for spine in axis.spines.values():
@@ -1583,8 +1590,8 @@ def _plot_exposure_uptake(
         axis.spines["top"].set_visible(False)
     axes[0].set_ylim(0.0, 9.3)
     axes[0].set_yticks([0, 2, 4, 6, 8])
-    axes[1].set_ylim(-48.0, 32.0)
-    axes[1].set_yticks([-40, -20, 0, 20])
+    axes[1].set_ylim(-0.4, 3.1)
+    axes[1].set_yticks([0, 1, 2, 3])
     scenario_handles = [
         Patch(
             facecolor="#6F7479",
@@ -1889,9 +1896,10 @@ def _mean_appraisal_score(
         & (survey["dimension"] == dimension)
         & (survey["rateability"] == "rateable")
     ]
-    if len(selected) != 10:
+    if not 8 <= len(selected) <= 10:
         raise ValueError(
-            f"Expected 10 appraisal scores for {persona}, {condition}, {dimension}; "
+            f"Expected 8--10 rateable appraisal scores for {persona}, "
+            f"{condition}, {dimension}; "
             f"got {len(selected)}"
         )
     return float(pd.to_numeric(selected["score_1_to_7"], errors="raise").mean())
@@ -1904,7 +1912,6 @@ def _score_transition(baseline: float, both: float) -> str:
 
 def _table_persona_appraisals(
     survey: pd.DataFrame,
-    reviewed_interviews: pd.DataFrame,
 ) -> pd.DataFrame:
     dimensions = {
         "Overall fit": "overall_person_space_fit",
@@ -1929,30 +1936,34 @@ def _table_persona_appraisals(
                 dimension=dimension,
             )
             scores[label] = _score_transition(baseline, both)
+        records.append({"Persona": PERSONA_LABELS[persona], **scores})
+    return pd.DataFrame(records)
+
+
+def _table_representative_responses(
+    reviewed_interviews: pd.DataFrame,
+) -> pd.DataFrame:
+    records = []
+    for persona in PERSONAS:
         candidates = reviewed_interviews[
             (reviewed_interviews["scenario"] == "high_load_high_acuity")
             & (reviewed_interviews["condition"] == "both")
             & (reviewed_interviews["persona_id"] == persona)
+            & (reviewed_interviews["question_id"] == "counterfactual_change")
+            & reviewed_interviews["review_grounding_pass"].astype(bool)
+            & reviewed_interviews["review_direct_answer_pass"].astype(bool)
+            & reviewed_interviews["review_claim_layer_pass"].astype(bool)
             & reviewed_interviews["include_in_explorer"].astype(bool)
         ].copy()
-        if candidates.empty:
-            response = "No grounded qualitative excerpt was retained."
-        else:
-            candidates["question_priority"] = (
-                candidates["question_id"] != "counterfactual_change"
-            ).astype(int)
-            candidates = candidates.sort_values(
-                ["question_priority", "explorer_display_order"]
+        if len(candidates) != 1:
+            raise ValueError(
+                "Expected one retained high-load/Both design response for "
+                f"{persona}; got {len(candidates)}"
             )
-            response = _quote_excerpt(str(candidates.iloc[0]["answer"]))
-        response_sentences = _sentences(response)
         records.append(
             {
-                "Orientation": PERSONA_LABELS[persona],
-                **scores,
-                "Representative grounded response": (
-                    response_sentences[0] if response_sentences else response
-                ),
+                "Persona": PERSONA_LABELS[persona],
+                "Representative synthetic response": str(candidates.iloc[0]["answer"]),
             }
         )
     return pd.DataFrame(records)
@@ -1989,7 +2000,7 @@ def _table_inclusive_fit(ensemble: pd.DataFrame) -> pd.DataFrame:
                             "low": summaries["fit_floor"]["ci95_low"],
                             "high": summaries["fit_floor"]["ci95_high"],
                         }),
-                    "Δ orientation SD [95% CI]": _format_effect(
+                    "Δ persona SD [95% CI]": _format_effect(
                         **{
                             "mean": summaries["between_orientation_sd"]["mean"],
                             "low": summaries["between_orientation_sd"]["ci95_low"],
@@ -2002,55 +2013,33 @@ def _table_inclusive_fit(ensemble: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def _table_architecture_ablation_matrix(
-    cells: pd.DataFrame,
-    effects: pd.DataFrame,
-) -> tuple[pd.DataFrame, str]:
-    grouped = cells.groupby("cell")["engage_indicator"]
-
-    def estimate(cell: str) -> str:
-        values = grouped.get_group(cell)
-        successes = int(values.sum())
-        total = int(len(values))
-        low, high = _wilson_interval(successes, total)
-        return (
-            f"{100.0 * successes / total:.1f}% "
-            f"[{100.0 * low:.1f}, {100.0 * high:.1f}]"
-        )
-
-    frame = pd.DataFrame(
-        [
+def _table_experience_ablation(summary: Mapping[str, Any]) -> pd.DataFrame:
+    records = []
+    for persona in PERSONAS:
+        result = summary["by_persona"][persona]
+        changed = int(result["action_changes"])
+        total = int(result["sample_count"])
+        records.append(
             {
-                "Orientation input": "Generic",
-                "No memory": estimate("neutral_no_memory"),
-                "Grounded memory": estimate("neutral_orientation"),
-            },
-            {
-                "Orientation input": "Persona-conditioned",
-                "No memory": estimate("persona_no_memory"),
-                "Grounded memory": estimate("full_persona_full_memory"),
-            },
-        ]
-    )
-    effect_labels = (
-        ("orientation_main_effect", "persona conditioning"),
-        ("memory_main_effect", "grounded memory"),
-        ("orientation_memory_interaction", "orientation × memory"),
-    )
-    notes = []
-    for effect, label in effect_labels:
-        row = effects[
-            (effects["scope"] == "overall") & (effects["effect"] == effect)
-        ]
-        if len(row) != 1:
-            raise ValueError(f"Missing architecture effect: {effect}")
-        result = row.iloc[0]
-        notes.append(
-            f"{label}: {100.0 * result['mean']:+.1f} pp "
-            f"[{100.0 * result['ci95_low']:.1f}, "
-            f"{100.0 * result['ci95_high']:.1f}]"
+                "Persona": PERSONA_LABELS[persona],
+                "Matched decisions": total,
+                "Choices changed without accumulated experience": (
+                    f"{changed}/{total} ({100.0 * changed / total:.1f}%)"
+                ),
+            }
         )
-    return frame, "; ".join(notes) + "."
+    changed = int(summary["action_change_count"])
+    total = int(summary["sample_count"])
+    records.append(
+        {
+            "Persona": "All personas",
+            "Matched decisions": total,
+            "Choices changed without accumulated experience": (
+                f"{changed}/{total} ({100.0 * changed / total:.1f}%)"
+            ),
+        }
+    )
+    return pd.DataFrame(records)
 
 
 def _normalize_text(value: Any) -> str:
@@ -2119,7 +2108,7 @@ def _select_reviewed_quotes(
                 {
                     "Scenario": SCENARIO_LABELS[key[0]],
                     "Condition": CONDITION_LABELS[key[1]],
-                    "Orientation": PERSONA_LABELS[key[2]],
+                    "Persona": PERSONA_LABELS[key[2]],
                     "Pair ID": "",
                     "Display order": 1,
                     "Question": "No retained excerpt",
@@ -2145,7 +2134,7 @@ def _select_reviewed_quotes(
                 {
                     "Scenario": SCENARIO_LABELS[key[0]],
                     "Condition": CONDITION_LABELS[key[1]],
-                    "Orientation": PERSONA_LABELS[key[2]],
+                    "Persona": PERSONA_LABELS[key[2]],
                     "Pair ID": row["pair_id"],
                     "Display order": int(row["explorer_display_order"]),
                     "Question": str(row["question_id"]).replace("_", " ").title(),
@@ -2215,7 +2204,7 @@ def _export_explorer(
         "score_dimension_map": SCORE_DIMENSIONS,
         "quote_selection": (
             "One prespecified synthetic interview bundle per scenario-condition-"
-            "orientation cell was independently audited by Codex. Only answers passing "
+            "persona cell was independently audited by Codex. Only answers passing "
             "grounding and claim-layer checks were eligible; displayed text is a "
             "verbatim excerpt."
         ),
@@ -2545,8 +2534,11 @@ def _reviewed_design_suggestions(
         coded["review_grounding_pass"].astype(bool)
         & coded["review_claim_layer_pass"].astype(bool)
     ].copy()
-    if len(coded) != 30:
-        raise ValueError(f"Expected 30 retained counterfactual answers; got {len(coded)}")
+    retained_count = len(coded)
+    if retained_count != 37:
+        raise ValueError(
+            f"Expected 37 retained counterfactual answers; got {retained_count}"
+        )
     labels = {
         "semi_private": "Semi-private coordination space",
         "visual": "Visual permeability or awareness",
@@ -2562,8 +2554,11 @@ def _reviewed_design_suggestions(
         records.append(
             {
                 "Synthetic design suggestion": label,
-                "Retained answers, n (%)": f"{count}/30 ({100.0 * count / 30:.1f}%)",
-                "Orientations represented": f"{personas}/5",
+                "Retained answers, n (%)": (
+                    f"{count}/{retained_count} "
+                    f"({100.0 * count / retained_count:.1f}%)"
+                ),
+                "Personas represented": f"{personas}/5",
             }
         )
     return pd.DataFrame(records)
@@ -2583,112 +2578,33 @@ def _write_questionnaire_convergence_table(tables_dir: Path) -> None:
     base_path = tables_dir / "tableD_questionnaire_convergence"
     raw.to_csv(base_path.with_suffix(".csv"), index=False, float_format="%.2f")
 
-    display = pd.DataFrame(
-        {
-            "End-of-shift construct": [
-                "Critically high workload (%)"
-                if row.construct == "Critically high workload"
-                else row.construct
-                for row in raw.itertuples(index=False)
-            ],
-            "Empirical mean (SD)": [
-                f"{row.empirical_mean:.2f} ({row.empirical_sd:.2f})"
-                for row in raw.itertuples(index=False)
-            ],
-            "Synthetic mean (SD)": [
-                f"{row.synthetic_mean:.2f} ({row.synthetic_sd:.2f})"
-                for row in raw.itertuples(index=False)
-            ],
-            "Absolute difference": [
-                f"{row.absolute_difference:.2f} pp"
-                if row.scale == "percent"
-                else f"{row.absolute_difference:.2f}"
-                for row in raw.itertuples(index=False)
-            ],
-        }
-    )
-    bold_cells = {
-        (index, "Absolute difference")
-        for index, row in raw.iterrows()
-        if row["scale"] == "1-7" and row["absolute_difference"] <= 0.5
+
+def _table_common_situation_construct_checks(frame: pd.DataFrame) -> pd.DataFrame:
+    required = {
+        "construct_check",
+        "n_shared_situations",
+        "estimate",
+        "ci95_low",
+        "ci95_high",
+        "direction_pass",
     }
-    note = (
-        "Empirical n=14 for the two workload items and n=13 for the remaining "
-        "items. Synthetic ratings are role-standardized to the observed three-role "
-        "mixture. Bold differences meet the prespecified half-point margin. The 25% "
-        "synthetic critical-workload mean is partly fixed by construction and is "
-        "excluded from the independent mean-convergence vote. The benchmark informed "
-        "audit development, so this is descriptive aggregate convergence rather than "
-        "held-out or person-level validation."
-    )
-    base_path.with_suffix(".md").write_text(
-        "# Aggregate questionnaire convergence\n\n"
-        + _markdown_table(display, bold_cells=bold_cells)
-        + f"\n*Note.* {note}\n"
-    )
-    base_path.with_suffix(".tex").write_text(
-        _latex_table(display, bold_cells=bold_cells)
-        + "\n\\par\\footnotesize\\textit{Note.} "
-        + _latex_escape(note)
-        + "\n"
-    )
-
-
-def _write_report(output_dir: Path, font_family: str) -> None:
-    text = f"""# Part 3 cognitive-persona findings
-
-## Figures
-
-- **Persona explorer preview (unnumbered).** Static link preview for the supplementary interactive explorer. OCEAN values are presentation crosswalks, not measured psychometrics.
-- **FigA — Cognitive architecture.** The during-shift decision loop and the strictly post-shift appraisal pathway. Generated prose never feeds back into movement or workflow.
-- **FigB — Common affordance, different uptake.** The combined intervention exposes all five orientations to nearly the same visibility gain, while role-standardized LLM engagement changes diverge.
-- **FigC — Inclusive person–space fit.** Baseline and Both fit distributions show persona means, paired-seed observations, the ensemble average, and the least-served-orientation floor.
-
-## Tables
-
-- **TableA — Persona appraisal profiles.** High-load Baseline-to-Both changes in four core appraisal dimensions plus one independently audited synthetic response.
-- **TableB — Inclusive-fit effects.** Changes in average fit, fit floor, and between-orientation dispersion for all three interventions.
-- **TableC — Audited synthetic design suggestions.** Independent Codex coding of the 30 grounded counterfactual answers retained from the prespecified 40-bundle audit.
-- **TableD — Aggregate questionnaire convergence.** Role-standardized synthetic end-of-shift ratings compared descriptively with authorized empirical aggregates from the source ED study.
-- **Appendix TableA — Architecture ablation.** Compact matched 2 × 2 persona-conditioning-by-memory results on fixed observed opportunities.
-
-## Interpretation boundary
-
-The Part 3 results support a synthetic-model claim: a spatial affordance can be commonly available while its behavioral uptake and appraised value differ across designed cognitive orientations. Under high load, Both raises average fit and the least-served-orientation floor while narrowing between-orientation dispersion. This is not evidence of Zurich ED staff preferences, psychometric types, or a universally optimal design.
-
-Exploratory trace-to-fit correlations are not promoted to a paper table. No
-movement, visibility, interaction-volume, or interaction-spacing channel
-consistently explains fit across both workload scenarios after role and
-intervention contrast are controlled. The appraisal model also received
-compressed trace evidence, so those post-hoc associations cannot be interpreted
-as causal mediation.
-
-The counterfactual table is hypothesis-generating. It records recurrent proposals
-from synthetic interviews, not preferences reported by Zurich ED staff. Among the
-30 independently audited and retained answers, semi-private coordination space was
-the most recurrent suggestion, followed by visual permeability, distributed
-support, availability signalling, and acoustic control. These categories were
-assigned in a post-hoc model-assisted audit, not a human thematic analysis.
-
-The qualitative display sample was reviewed independently by Codex against
-grounding and claim-layer criteria. This process retained 184 of 240 answers and
-selected 107 for display. No human interview review or inter-rater reliability
-assessment was performed, and two persona-condition cells have no retained
-qualitative excerpt.
-
-The questionnaire audit provides a separate aggregate calibration check. Five of
-six independently assessed 1–7 means fall within the prespecified half-point
-margin after role standardization. Because the observed benchmark informed audit
-development, this is descriptive convergence, not held-out validation of the
-personas or a person-level prediction claim. The critical-workload item is reported
-for completeness but excluded from that vote because its synthetic mean is partly
-fixed by the audit design.
-
-## Build
-
-Figures use {font_family}. The build reads completed outputs only and does not run the simulation or an LLM.
-"""
-    (output_dir / "part3_cognitive_personas_n10_report.md").write_text(text)
+    if not required <= set(frame.columns) or len(frame) != 5:
+        raise ValueError("Common-situation construct-check table is incomplete")
+    records = []
+    for _, row in frame.iterrows():
+        records.append(
+            {
+                "Prespecified comparison": str(row["construct_check"]),
+                "Shared situations": int(row["n_shared_situations"]),
+                "Estimated contrast (percentage points)": f'{100.0 * float(row["estimate"]):+.1f}',
+                "95% CI": (
+                    f'[{100.0 * float(row["ci95_low"]):+.1f}, '
+                    f'{100.0 * float(row["ci95_high"]):+.1f}]'
+                ),
+                "Expected direction": "Met" if bool(row["direction_pass"]) else "Not met",
+            }
+        )
+    return pd.DataFrame(records)
 
 
 def build(args: argparse.Namespace) -> dict[str, Any]:
@@ -2704,31 +2620,27 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     with (
         ResultSource(Path(args.main_source)) as main_source,
         ResultSource(Path(args.appraisal_source)) as appraisal_source,
-        ResultSource(Path(args.ablation_source)) as ablation_source,
     ):
         main_summary = main_source.read_json("analysis/analysis_summary.json")
         appraisal_summary = appraisal_source.read_json(
             "analysis/appraisal_analysis_summary.json"
         )
-        ablation_summary = ablation_source.read_json(
-            "analysis/architecture_ablation_summary.json"
+        experience_ablation = main_source.read_json(
+            "main/state_ablation_summary.json"
         )
-        _validate_sources(main_summary, appraisal_summary, ablation_summary)
+        _validate_sources(main_summary, appraisal_summary, experience_ablation)
 
         experience_effects = main_source.read_csv(
             "analysis/paired_persona_experience_effects.csv"
         )
-        persona_effects = main_source.read_csv("analysis/paired_persona_effects.csv")
+        matched_engagement = pd.read_csv(Path(args.matched_engagement).resolve())
+        common_situation_checks = pd.read_csv(
+            Path(args.common_situation_audit).resolve()
+        )
         survey = appraisal_source.read_csv("analysis/survey_responses.csv")
         reviewed_interviews = pd.read_csv(Path(args.reviewed_interviews).resolve())
         reviewed_counterfactuals = pd.read_csv(
             Path(args.reviewed_counterfactuals).resolve()
-        )
-        ablation_cells = ablation_source.read_csv(
-            "analysis/architecture_ablation_cells.csv"
-        )
-        ablation_effects = ablation_source.read_csv(
-            "analysis/architecture_ablation_effects.csv"
         )
         template = _load_template(DEFAULT_EXPLORER_DATA)
 
@@ -2739,21 +2651,45 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         _plot_interaction_pipeline(study_figures_dir)
         _plot_persona_atlas(template, figures_dir)
         _plot_cognitive_architecture(figures_dir)
-        _plot_exposure_uptake(experience_effects, persona_effects, figures_dir)
+        _plot_exposure_uptake(experience_effects, figures_dir)
         _plot_fit_ensemble(fit, ensemble, figures_dir)
 
-        table_a = _table_persona_appraisals(survey, reviewed_interviews)
+        table_a = _table_persona_appraisals(survey)
         _write_table(
             table_a,
             tables_dir / "tableA_persona_appraisal_profiles",
-            bold_columns=("Orientation", "Overall fit"),
+            bold_columns=("Persona", "Overall fit"),
             note=(
                 "High load; each score is Baseline → Both (change) on a 1–7 scale, "
-                "averaged across 10 paired seeds. The response was retained from the "
-                "prespecified high-load/Both bundle after an independent Codex grounding "
-                "and claim-layer audit. These are designed-orientation appraisals and "
-                "synthetic responses, not Zurich ED staff testimony or human-coded "
-                "interviews."
+                "averaged across 10 paired seeds. These are model-generated appraisals "
+                "for designed personas."
+            ),
+        )
+
+        appendix_b = _table_representative_responses(reviewed_interviews)
+        _write_table(
+            appendix_b,
+            tables_dir / "appendix_tableB_representative_responses",
+            note=(
+                "One high-load/Both response to the same design-change question is "
+                "shown for each persona. All five passed the prespecified grounding, "
+                "direct-answer, and claim-layer checks. They are synthetic responses, "
+                "not staff testimony."
+            ),
+        )
+
+        appendix_c = _table_common_situation_construct_checks(
+            common_situation_checks
+        )
+        _write_table(
+            appendix_c,
+            tables_dir / "appendix_tableC_common_situation_construct_checks",
+            note=(
+                "The same accepted decision situation was replayed for every persona. "
+                "Contrasts are paired differences in engagement rate, except the "
+                "patient-linked and urgency rows, which compare each persona's contextual "
+                "difference with the mean difference of the other four personas. "
+                "Intervals use paired bootstrap resampling of situations."
             ),
         )
 
@@ -2764,7 +2700,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             for column in (
                 "Δ average fit [95% CI]",
                 "Δ fit floor [95% CI]",
-                "Δ orientation SD [95% CI]",
+                "Δ persona SD [95% CI]",
             )
             if (
                 (match := re.search(
@@ -2782,11 +2718,11 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             tables_dir / "tableB_inclusive_person_space_fit",
             bold_cells=significant_fit_cells,
             note=(
-                "The fit floor is the lowest of the five orientation scores within each "
-                "seed. Orientation SD is the within-seed standard deviation across the "
-                "five designed orientations; a negative change indicates less disparity. "
+                "The fit floor is the lowest of the five persona scores within each "
+                "seed. Persona SD is the within-seed standard deviation across the "
+                "five designed personas; a negative change indicates less disparity. "
                 "Confidence intervals use seed-paired means (n=10). These are "
-                "synthetic-orientation ensemble metrics, not population accessibility "
+                "synthetic-persona ensemble metrics, not population accessibility "
                 "estimates. Bold values have 95% confidence intervals that exclude zero."
             ),
         )
@@ -2807,8 +2743,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             tables_dir / "tableC_recurrent_design_priorities",
             bold_cells=priority_cells,
             note=(
-                "Independent Codex coding of 30 grounded counterfactual answers retained "
-                "from the 40 prespecified bundles; ten were excluded for grounding or "
+                "Independent Codex coding of 37 grounded counterfactual answers retained "
+                "from the 40 prespecified bundles; three were excluded for grounding or "
                 "claim-layer failures. Categories overlap. The two most recurrent "
                 "suggestions are bold. This is a post-hoc model-assisted audit, not human "
                 "thematic analysis or Zurich ED staff preference evidence."
@@ -2817,17 +2753,16 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
 
         _write_questionnaire_convergence_table(tables_dir)
 
-        appendix_a, architecture_effect_note = _table_architecture_ablation_matrix(
-            ablation_cells, ablation_effects
-        )
+        appendix_a = _table_experience_ablation(experience_ablation)
         _write_table(
             appendix_a,
-            tables_dir / "appendix_tableA_cognitive_architecture_ablation",
+            tables_dir / "appendix_tableA_experience_ablation",
             note=(
-                "Engagement rate [95% Wilson CI] on the same 120 fixed observed "
-                "opportunities per cell. Matched factorial effects (95% CI): "
-                f"{architecture_effect_note} This ablation does not represent complete "
-                "recursive closed-loop trajectories."
+                "Each persona was evaluated on 100 decisions taken from the completed "
+                "evolving-persona runs. The same opportunity was replayed without the "
+                "accumulated experience state. This matched check shows whether that "
+                "state could alter an immediate choice; it is not a second set of full "
+                "simulation trajectories."
             ),
         )
 
@@ -2843,7 +2778,6 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         quote_audit.to_csv(
             tables_dir / "audit_explorer_quote_selection.csv", index=False
         )
-    _write_report(output_dir, font_family)
     expected = [
         figures_dir / f"{stem}.{suffix}"
         for stem in (
@@ -2869,15 +2803,16 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "tableB_inclusive_person_space_fit",
             "tableC_recurrent_design_priorities",
             "tableD_questionnaire_convergence",
-            "appendix_tableA_cognitive_architecture_ablation",
+            "appendix_tableA_experience_ablation",
+            "appendix_tableB_representative_responses",
+            "appendix_tableC_common_situation_construct_checks",
         )
-        for suffix in ("csv", "md", "tex")
+        for suffix in ("csv",)
     )
     expected.extend(
         [
             tables_dir / "audit_explorer_quote_selection.csv",
             Path(args.explorer_output).resolve(),
-            output_dir / "part3_cognitive_personas_n10_report.md",
         ]
     )
     missing = [str(path) for path in expected if not path.is_file()]
@@ -2890,7 +2825,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "explorer_preview_count": 1,
         "cross_study_figure_count": 2,
         "main_table_count": 4,
-        "appendix_table_count": 1,
+        "appendix_table_count": 3,
         "explorer_result_count": 40,
         "output_dir": str(output_dir),
         "study_figures_dir": str(study_figures_dir),
@@ -2902,12 +2837,18 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--main-source", default=str(DEFAULT_MAIN_SOURCE))
     parser.add_argument("--appraisal-source", default=str(DEFAULT_APPRAISAL_SOURCE))
-    parser.add_argument("--ablation-source", default=str(DEFAULT_ABLATION_SOURCE))
     parser.add_argument(
         "--reviewed-interviews", default=str(DEFAULT_REVIEWED_INTERVIEWS)
     )
     parser.add_argument(
         "--reviewed-counterfactuals", default=str(DEFAULT_REVIEWED_COUNTERFACTUALS)
+    )
+    parser.add_argument(
+        "--matched-engagement", default=str(DEFAULT_MATCHED_ENGAGEMENT)
+    )
+    parser.add_argument(
+        "--common-situation-audit",
+        default=str(DEFAULT_COMMON_SITUATION_AUDIT),
     )
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument(

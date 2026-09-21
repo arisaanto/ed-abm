@@ -332,6 +332,7 @@ def verify(
     *,
     limit: int | None,
     reject_fixtures: bool,
+    scientific_episode_count: int = SCIENTIFIC_EPISODE_COUNT,
 ) -> dict[str, Any]:
     packets = _read_packets(packet_path, limit)
     responses = _read_jsonl(response_path)
@@ -747,14 +748,15 @@ def verify(
         )
     )
     if scientific_design_checked:
-        if len(packets) != SCIENTIFIC_PACKET_COUNT:
+        expected_packet_count = scientific_episode_count * len(expected_persona_ids)
+        if len(packets) != expected_packet_count:
             scientific_design_errors.append(
-                f"expected {SCIENTIFIC_PACKET_COUNT} matched scientific packets, "
+                f"expected {expected_packet_count} matched scientific packets, "
                 f"found {len(packets)}"
             )
-        if evidence_group_count != SCIENTIFIC_EPISODE_COUNT:
+        if evidence_group_count != scientific_episode_count:
             scientific_design_errors.append(
-                f"expected {SCIENTIFIC_EPISODE_COUNT} matched evidence groups, "
+                f"expected {scientific_episode_count} matched evidence groups, "
                 f"found {evidence_group_count}"
             )
         if set(persona_ids) != expected_persona_ids:
@@ -767,9 +769,9 @@ def verify(
                     f"{evidence_id}: incomplete five-persona crossing"
                 )
         for persona_id in sorted(expected_persona_ids):
-            if persona_counts.get(persona_id, 0) != SCIENTIFIC_EPISODE_COUNT:
+            if persona_counts.get(persona_id, 0) != scientific_episode_count:
                 scientific_design_errors.append(
-                    f"{persona_id}: expected {SCIENTIFIC_EPISODE_COUNT} responses, found "
+                    f"{persona_id}: expected {scientific_episode_count} responses, found "
                     f"{persona_counts.get(persona_id, 0)}"
                 )
         errors.extend(scientific_design_errors)
@@ -954,6 +956,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-json", help="Optional verification-summary JSON")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--reject-fixtures", action="store_true")
+    parser.add_argument(
+        "--scientific-episode-count",
+        type=int,
+        default=SCIENTIFIC_EPISODE_COUNT,
+        help="Expected matched evidence groups for a crossed scientific decision audit",
+    )
     return parser.parse_args()
 
 
@@ -964,6 +972,7 @@ def main() -> None:
         Path(args.responses).expanduser().resolve(),
         limit=args.limit,
         reject_fixtures=args.reject_fixtures,
+        scientific_episode_count=args.scientific_episode_count,
     )
     rendered = json.dumps(summary, indent=2, sort_keys=True) + "\n"
     print(rendered, end="")

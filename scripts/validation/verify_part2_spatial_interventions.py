@@ -142,10 +142,36 @@ def verify(batch_dir: Path, expected: str) -> dict[str, Any]:
         )
     }
     missing_key_metrics = defaultdict(int)
+    analysis_window_failures = []
     for summary in summaries:
         for key in ("f2f_per_hour", "interaction_count", "composite_distance"):
             if key not in summary.get("validation_metrics", {}):
                 missing_key_metrics[key] += 1
+        scenario, condition, seed = _metadata(summary)
+        evaluated_hours = _safe_float(
+            summary.get("validation_metrics", {}).get("evaluated_hours"), -1.0
+        )
+        movement_window = summary.get("movement_dwell_metrics", {}).get(
+            "measurement_window"
+        )
+        visibility_window = summary.get("visibility_metrics", {}).get(
+            "measurement_window"
+        )
+        if (
+            evaluated_hours != 10.0
+            or movement_window != "post_warmup"
+            or visibility_window != "post_warmup"
+        ):
+            analysis_window_failures.append(
+                {
+                    "scenario": scenario,
+                    "condition": condition,
+                    "seed": seed,
+                    "evaluated_hours": evaluated_hours,
+                    "movement_window": movement_window,
+                    "visibility_window": visibility_window,
+                }
+            )
 
     failed = bool(
         len(paths) != expected_total
@@ -156,6 +182,7 @@ def verify(batch_dir: Path, expected: str) -> dict[str, Any]:
         or workflow_counts.get("PASS", 0) != len(summaries)
         or any(value != 0 for value in hard_gate_sums.values())
         or missing_key_metrics
+        or analysis_window_failures
     )
     return {
         "batch_dir": str(batch_dir),
@@ -184,6 +211,7 @@ def verify(batch_dir: Path, expected: str) -> dict[str, Any]:
         "hard_gate_sums": hard_gate_sums,
         "repair_event_sums": repair_sums,
         "missing_key_metrics": dict(missing_key_metrics),
+        "analysis_window_failures": analysis_window_failures,
         "integrity_pass": not failed,
         "message": (
             "Part 2 batch integrity checks passed."

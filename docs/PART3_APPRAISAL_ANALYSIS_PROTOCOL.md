@@ -93,7 +93,7 @@ assigned counterfactual codes from the prespecified audit sample. These counts
 are exploratory synthetic design suggestions, not human thematic findings.
 
 The frozen review record is
-`manifests/part3_independent_interview_review.json`; reproducible exports are in
+`manifests/part3_evolving_independent_interview_review.json`; reproducible exports are in
 `outputs/findings/part3_cognitive_personas_n10/review/`.
 
 ## Required outputs

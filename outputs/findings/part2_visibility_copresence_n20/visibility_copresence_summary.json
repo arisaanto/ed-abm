@@ -1,0 +1,122 @@
+[
+  {
+    "setting": "restricted",
+    "metric": "nearby_pair_time_share",
+    "seed_count": 20,
+    "baseline_mean": 0.26437293652997623,
+    "cockpit_only_mean": 0.2711735166157549,
+    "paired_mean_difference": 0.006800580085778647,
+    "paired_ci95_low": -0.0016322816980516332,
+    "paired_ci95_high": 0.015233441869608927
+  },
+  {
+    "setting": "restricted",
+    "metric": "nearby_pairs_mutually_visible_share",
+    "seed_count": 20,
+    "baseline_mean": 0.021277672890262195,
+    "cockpit_only_mean": 0.05330575042913345,
+    "paired_mean_difference": 0.032028077538871255,
+    "paired_ci95_low": 0.027402391186999636,
+    "paired_ci95_high": 0.036653763890742874
+  },
+  {
+    "setting": "restricted",
+    "metric": "staff_time_any_visible_colleague_share",
+    "seed_count": 20,
+    "baseline_mean": 0.044753000709679414,
+    "cockpit_only_mean": 0.13744638834891543,
+    "paired_mean_difference": 0.09269338763923601,
+    "paired_ci95_low": 0.08384793194597784,
+    "paired_ci95_high": 0.10153884333249419
+  },
+  {
+    "setting": "restricted",
+    "metric": "f2f_per_hour",
+    "seed_count": 20,
+    "baseline_mean": 21.565,
+    "cockpit_only_mean": 28.14,
+    "paired_mean_difference": 6.575,
+    "paired_ci95_low": 5.190738311841085,
+    "paired_ci95_high": 7.959261688158915
+  },
+  {
+    "setting": "default",
+    "metric": "nearby_pair_time_share",
+    "seed_count": 20,
+    "baseline_mean": 0.4562093091425221,
+    "cockpit_only_mean": 0.4634792804467895,
+    "paired_mean_difference": 0.007269971304267331,
+    "paired_ci95_low": 0.00014363964620691446,
+    "paired_ci95_high": 0.014396302962327748
+  },
+  {
+    "setting": "default",
+    "metric": "nearby_pairs_mutually_visible_share",
+    "seed_count": 20,
+    "baseline_mean": 0.02030249494957406,
+    "cockpit_only_mean": 0.050502348951288356,
+    "paired_mean_difference": 0.030199854001714297,
+    "paired_ci95_low": 0.02736197406089568,
+    "paired_ci95_high": 0.03303773394253291
+  },
+  {
+    "setting": "default",
+    "metric": "staff_time_any_visible_colleague_share",
+    "seed_count": 20,
+    "baseline_mean": 0.07162825141164492,
+    "cockpit_only_mean": 0.15821685334320712,
+    "paired_mean_difference": 0.08658860193156222,
+    "paired_ci95_low": 0.0780758991336279,
+    "paired_ci95_high": 0.09510130472949653
+  },
+  {
+    "setting": "default",
+    "metric": "f2f_per_hour",
+    "seed_count": 20,
+    "baseline_mean": 22.71,
+    "cockpit_only_mean": 31.9,
+    "paired_mean_difference": 9.19,
+    "paired_ci95_low": 8.499339571343393,
+    "paired_ci95_high": 9.880660428656606
+  },
+  {
+    "setting": "expanded",
+    "metric": "nearby_pair_time_share",
+    "seed_count": 20,
+    "baseline_mean": 0.5941081181153384,
+    "cockpit_only_mean": 0.5936468264988121,
+    "paired_mean_difference": -0.0004612916165262604,
+    "paired_ci95_low": -0.007025696637282708,
+    "paired_ci95_high": 0.006103113404230187
+  },
+  {
+    "setting": "expanded",
+    "metric": "nearby_pairs_mutually_visible_share",
+    "seed_count": 20,
+    "baseline_mean": 0.03437233195617938,
+    "cockpit_only_mean": 0.10552086729373655,
+    "paired_mean_difference": 0.07114853533755718,
+    "paired_ci95_low": 0.06656245273981556,
+    "paired_ci95_high": 0.07573461793529879
+  },
+  {
+    "setting": "expanded",
+    "metric": "staff_time_any_visible_colleague_share",
+    "seed_count": 20,
+    "baseline_mean": 0.14780770773550558,
+    "cockpit_only_mean": 0.35309790490295906,
+    "paired_mean_difference": 0.20529019716745348,
+    "paired_ci95_low": 0.1911687189966222,
+    "paired_ci95_high": 0.21941167533828476
+  },
+  {
+    "setting": "expanded",
+    "metric": "f2f_per_hour",
+    "seed_count": 20,
+    "baseline_mean": 22.815,
+    "cockpit_only_mean": 34.72,
+    "paired_mean_difference": 11.905,
+    "paired_ci95_low": 10.641370934047456,
+    "paired_ci95_high": 13.168629065952542
+  }
+]

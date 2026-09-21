@@ -4,7 +4,7 @@
 
 Part 3 uses Qwen/Qwen3.6-35B-A3B through vLLM's offline `LLM` interface on
 Snellius. It does not run a persistent API server. The 400-run closed-loop main
-study, post-run appraisals, and matched architecture ablation are complete and
+study, post-run appraisals, and matched experience ablation are complete and
 frozen.
 
 The cognitive layer is disabled by default. Parts 1 and 2 do not import vLLM,
@@ -56,8 +56,8 @@ scientific evidence.
 
 ## Recorded execution order
 
-1. Preserve the accepted closed-loop main result at
-   `~/ABM_results/part3_closed_loop_main_n10/`.
+1. Preserve the accepted accumulated-experience main result at
+   `~/ABM_results/part3_evolving_main_n10/`.
 2. Run the CPU-only all-seed appraisal packet preflight:
 
 ```bash
@@ -79,10 +79,10 @@ sbatch jobs/snellius_part3_qwen36_appraisals_n10.sbatch
    naturalness review before interpreting survey or interview outputs or
    exporting the persona explorer data.
 
-The completed architecture ablation was prepared with
-`scripts/build/build_part3_ablation_packets.py`. It is a complete 2 x 2 comparison of
-full versus neutral workplace orientation and retained versus removed grounded
-memory. Packet construction is CPU-only.
+The completed experience ablation was prepared with
+`scripts/build/build_part3_ablation_packets.py`. It compares persona-specific
+and common decision priors, both with and without accumulated experience, in a
+complete 2 x 2 design. Packet construction is CPU-only.
 
 ## Budget
 

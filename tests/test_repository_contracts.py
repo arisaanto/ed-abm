@@ -64,6 +64,36 @@ class FrozenStudyContracts(unittest.TestCase):
 
 
 class AppraisalDesignContracts(unittest.TestCase):
+    def test_unchanged_state_discards_superfluous_evidence(self) -> None:
+        backend = VLLMOfflineBackend()
+        prior_state = {
+            "coordination_need": 0,
+            "interruption_strain": 0,
+            "task_continuity": 0,
+            "team_support": 0,
+        }
+        packet = {
+            "prompt_id": "state:test:7200:agent:1:team_connector",
+            "packet_type": "in_simulation_state_update",
+            "evidence_ids": ["event_1"],
+            "llm_visible_evidence": {"prior_state": prior_state},
+        }
+        payload = {
+            "checkpoint_id": packet["prompt_id"],
+            "state": dict(prior_state),
+            "evidence_by_dimension": {
+                "coordination_need": [],
+                "interruption_strain": [],
+                "task_continuity": [],
+                "team_support": ["event_1"],
+            },
+        }
+
+        normalized = backend.normalize_packet_response(packet, payload)
+
+        self.assertEqual(normalized["state"], prior_state)
+        self.assertEqual(normalized["evidence_by_dimension"]["team_support"], [])
+
     def test_deterministic_finalizer_only_trims_incomplete_tail(self) -> None:
         trimmed, changed = trim_incomplete_prose(
             "I could coordinate clearly. The nursing work area felt",
@@ -443,7 +473,11 @@ class AppraisalDesignContracts(unittest.TestCase):
 
     def test_independent_interview_audit_is_complete_and_not_human_review(self) -> None:
         manifest = json.loads(
-            (ROOT / "manifests" / "part3_independent_interview_review.json").read_text()
+            (
+                ROOT
+                / "manifests"
+                / "part3_evolving_independent_interview_review.json"
+            ).read_text()
         )
         self.assertEqual(
             manifest["reviewer_type"],
@@ -497,9 +531,9 @@ class PersonaExplorerContracts(unittest.TestCase):
         self.assertEqual(qualitative_review["answer_count"], 240)
         self.assertEqual(
             qualitative_review["answers_passing_scientific_use_gate"],
-            184,
+            140,
         )
-        self.assertEqual(qualitative_review["cells_without_retained_excerpt"], 2)
+        self.assertEqual(qualitative_review["cells_without_retained_excerpt"], 1)
         expected_count = len(data["personas"]) * len(data["scenarios"]) * len(data["conditions"])
         self.assertEqual(len(data["results"]), expected_count)
         keys = {

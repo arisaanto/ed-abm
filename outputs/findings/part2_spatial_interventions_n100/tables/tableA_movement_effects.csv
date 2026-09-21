@@ -1,7 +1,7 @@
 Scenario,Contrast,Δ movement (km/run) [95% CI],Δ movement (%),Δ zone transitions [95% CI]
-Normal load,COCPIT only − Baseline,"+1.5 [+1.4, +1.6]",+14.1,"+404.1 [+373.2, +435.0]"
-Normal load,NURSTA only − Baseline,"-0.4 [-0.5, -0.2]",-3.3,"+74.2 [+39.6, +108.7]"
-Normal load,Both − Baseline,"+1.3 [+1.1, +1.4]",+11.7,"+504.3 [+472.7, +535.9]"
-High load,COCPIT only − Baseline,"+1.2 [+1.1, +1.3]",+11.2,"+333.8 [+305.6, +362.1]"
-High load,NURSTA only − Baseline,"-0.3 [-0.4, -0.2]",-2.5,"+104.0 [+79.5, +128.4]"
-High load,Both − Baseline,"+1.0 [+0.9, +1.1]",+9.5,"+444.5 [+416.1, +472.9]"
+Normal load,COCPIT only − Baseline,"+1.3 [+1.2, +1.4]",+14.5,"+336.1 [+313.7, +358.6]"
+Normal load,NURSTA only − Baseline,"-0.3 [-0.3, -0.2]",-2.9,"+76.3 [+55.1, +97.6]"
+Normal load,Both − Baseline,"+1.1 [+1.0, +1.1]",+11.9,"+428.1 [+406.0, +450.2]"
+High load,COCPIT only − Baseline,"+1.0 [+0.9, +1.1]",+11.2,"+271.1 [+250.7, +291.4]"
+High load,NURSTA only − Baseline,"-0.2 [-0.3, -0.2]",-2.7,"+80.7 [+62.6, +98.8]"
+High load,Both − Baseline,"+0.8 [+0.7, +0.8]",+8.7,"+359.2 [+340.2, +378.1]"
