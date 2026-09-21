@@ -5,7 +5,7 @@ interaction in an emergency department. The study compares the model with
 empirical shadowing data, tests visibility and workstation interventions, and
 examines how five designed personas take up the resulting spatial affordances.
 
-![Study design: validate, intervene, and interpret](outputs/findings/study_overview/figures/study_design_overview.png)
+![Study design: compare, intervene, and interpret](outputs/findings/study_overview/figures/study_design_overview.png)
 
 ## Study at a Glance
 
@@ -85,6 +85,24 @@ See the [Part 3 backend setup](docs/PART3_LLM_BACKEND_SETUP.md) for the
 reproducible Snellius workflow. The CPU and vLLM environments should not be
 mixed.
 
+## Five-minute quick start
+
+From the repository root, after installing the CPU requirements, run a short
+baseline simulation:
+
+```bash
+python3 scripts/run/run_single.py \
+  --scenario-mode normal_load --condition baseline --seed 1 \
+  --duration 600 --warmup-seconds 0 --output-dir outputs/quickstart
+```
+
+Open `outputs/quickstart/summary.json` for the run settings and outcome
+summary, or `outputs/quickstart/interaction_events.csv` for logged contacts.
+The output directory is ignored by Git. This ten-minute *simulation* is a
+software smoke test, not a reproduction of the paper's 12-hour runs with a
+two-hour warm-up and ten-hour analysis window. It requires no restricted
+shadowing data or GPU.
+
 ## Verification
 
 Repository-level checks do not require restricted research data:
@@ -103,8 +121,9 @@ development.
 
 ## Results
 
+- [Results index: what each public figure and table represents](docs/RESULTS_INDEX.md)
 - [Study overview and interaction pipeline](outputs/findings/study_overview/)
-- [Part 1 validation findings](outputs/findings/part1_validation_n100/)
+- [Part 1 baseline-resemblance findings](outputs/findings/part1_validation_n100/)
 - [Part 2 intervention findings](outputs/findings/part2_spatial_interventions_n100/)
 - [Part 2 sensitivity findings](outputs/findings/part2_parameter_sensitivity_n20/)
 - [Part 3 persona findings](outputs/findings/part3_cognitive_personas_n10/)
@@ -120,9 +139,12 @@ manuscript owns its typeset table copies.
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Part 2 intervention protocol](docs/PART2_SPATIAL_INTERVENTIONS_PROTOCOL.md)
-- [Part 3 development history and protocol](docs/PART3_PLAN.md)
 - [Part 3 appraisal protocol](docs/PART3_APPRAISAL_ANALYSIS_PROTOCOL.md)
 - [Part 3 GPU backend setup](docs/PART3_LLM_BACKEND_SETUP.md)
+
+[The earlier Part 3 development plan](docs/PART3_PLAN.md) is preserved as
+history. Its abandoned factorial ablation is not a result in the current
+paper; use the results index and final outputs for reported findings.
 
 ## Data Availability
 

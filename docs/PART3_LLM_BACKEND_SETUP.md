@@ -15,19 +15,19 @@ load a model, or require a GPU environment.
 Core ABM environment:
 
 ```bash
-python3 -m venv ~/abm-env
-source ~/abm-env/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
 python3 -m pip install --upgrade pip
-python3 -m pip install -r ~/ABM/ABM/requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 Part 3 GPU environment:
 
 ```bash
-python3 -m venv ~/vllm-env
-source ~/vllm-env/bin/activate
+python3 -m venv vllm-env
+source vllm-env/bin/activate
 python3 -m pip install --upgrade pip
-python3 -m pip install -r ~/ABM/ABM/requirements-llm.txt
+python3 -m pip install -r requirements-llm.txt
 ```
 
 Use separate virtual environments so vLLM can resolve a compatible PyTorch,
@@ -54,14 +54,18 @@ Reasoning mode remains disabled: the endpoints require concise structured JSON,
 and extra reasoning tokens would increase cost without becoming admissible
 scientific evidence.
 
-## Recorded execution order
+## Original Snellius execution record
+
+The paths and commands below document the completed original run. They are
+not a portable quick start and are not required to inspect the published
+aggregate findings.
 
 1. Preserve the accepted accumulated-experience main result at
    `~/ABM_results/part3_evolving_main_n10/`.
 2. Run the CPU-only all-seed appraisal packet preflight:
 
 ```bash
-cd ~/ABM/ABM
+cd /path/to/ed-abm
 mkdir -p logs
 sbatch jobs/snellius_part3_appraisal_preflight_n10.sbatch
 ```
@@ -79,10 +83,12 @@ sbatch jobs/snellius_part3_qwen36_appraisals_n10.sbatch
    naturalness review before interpreting survey or interview outputs or
    exporting the persona explorer data.
 
-The completed experience ablation was prepared with
-`scripts/build/build_part3_ablation_packets.py`. It compares persona-specific
-and common decision priors, both with and without accumulated experience, in a
-complete 2 x 2 design. Packet construction is CPU-only.
+The reported experience check replayed 500 completed-run decisions with the
+same persona and opportunity, once with and once without accumulated
+experience. Its [published table](../outputs/findings/part3_cognitive_personas_n10/tables/appendix_tableA_experience_ablation.csv)
+reports how often the choice changed. The earlier 2 x 2 factorial prompt
+ablation described in [the development plan](PART3_PLAN.md) is historical and
+is not a reported result.
 
 ## Budget
 

@@ -1,6 +1,7 @@
 # Python environments and caches
 .env
 .venv/
+vllm-env/
 env/
 venv/
 __pycache__/

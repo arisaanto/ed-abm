@@ -15,7 +15,8 @@ Seed `k` baseline is compared with seed `k` in every intervention condition with
 
 ## Intervention Semantics
 
-- `baseline`: frozen Part 1 spatial condition.
+- `baseline`: frozen Part 1 spatial condition, previously compared with
+  shadowing observations during model development.
 - `cockpit_only`: COCPIT partitions become transparent in the perception/visibility layer. Physical collision and routing geometry are unchanged.
 - `nursta_only`: NURSTA desk/station location, walkable standing semantics, station-return anchors, and related route exposure change together.
 - `both`: combines the two interventions.
@@ -72,4 +73,6 @@ Primary estimates are paired seed deltas (`condition - baseline`) with mean, SD,
 
 ## Do Not Claim
 
-The results are conditional counterfactuals in this calibrated ED model. They are not empirical proof of post-intervention benefit, clinical outcome evidence, or universal design recommendations.
+The results are conditional counterfactuals in this manually developed ED
+model. They are not empirical proof of post-intervention benefit, clinical
+outcome evidence, or universal design recommendations.

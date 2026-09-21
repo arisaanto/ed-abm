@@ -2,8 +2,8 @@
 
 ## Status and scope
 
-This protocol is locked before Qwen generates the 800 end-of-shift appraisal
-responses. The machine-readable source of truth is
+This protocol was locked before Qwen generated the 800 end-of-shift appraisal
+responses. The machine-readable analysis specification is
 `manifests/part3_appraisal_analysis_spec.json`; the analysis script validates
 and uses that file directly.
 
@@ -78,19 +78,18 @@ deviation and must not be described as human review, manual human coding, or
 inter-rater validation.
 
 The Codex audit assessed evidence grounding, claim-layer separation,
-naturalness, directness, context labeling, and counterfactual tradeoffs. It
-retained 184 answers for scientific use, excluded 56, and selected 107 grounded
-excerpts for display. Thirty of the 40 counterfactual answers passed both the
-grounding and claim-layer gates. Two persona-condition cells had no acceptable
-display excerpt and are shown as such rather than backfilled from outside the
-prespecified sample.
+naturalness, directness, context labeling, and counterfactual tradeoffs. Its
+final record retained 140 of 240 answers for scientific use, excluded 100,
+and selected 109 excerpts for display. Thirty-seven retained design answers
+underlie the exploratory category counts. Thirty-two of the 40 bundles had at
+least three usable answers, and one display cell had no acceptable excerpt.
 
 The five-category regular-expression dictionary was also compared with the
-independent audit. Its macro F1 was 0.69 and its minimum category F1 was 0.36,
-which is inadequate for final frequency claims over all 400 interviews.
-Consequently, the paper table reports only the 30 retained, independently
-assigned counterfactual codes from the prespecified audit sample. These counts
-are exploratory synthetic design suggestions, not human thematic findings.
+model-assisted audit. Its macro F1 was 0.704 and its minimum category F1 was
+0.56, which was inadequate for final frequency claims over all 400 interviews.
+Consequently, the paper table reports only the 37 retained design answers
+from the prespecified audit sample. Categories may overlap. These counts are
+exploratory synthetic design suggestions, not human thematic findings.
 
 The frozen review record is
 `manifests/part3_evolving_independent_interview_review.json`; reproducible exports are in

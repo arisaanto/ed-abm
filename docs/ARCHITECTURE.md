@@ -14,7 +14,9 @@ Physical walls control movement and collision. Visibility walls control percepti
 
 ## Part 2 Conditions
 
-- `baseline`: frozen validated care-area condition.
+- `baseline`: the frozen care-area condition used for the development-informed
+  comparison with shadowing observations. That comparison is not independent
+  validation.
 - `cockpit_only`: changes COCPIT transparency and visibility occlusion; physical routing geometry remains baseline.
 - `nursta_only`: relocates NURSTA physical/station semantics and associated station-return and route exposure.
 - `both`: combines COCPIT transparency and NURSTA relocation.

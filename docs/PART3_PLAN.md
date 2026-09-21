@@ -1,10 +1,11 @@
 # Part 3: Cognitive Orientations in a Spatially Constrained ED ABM
 
-This file records the design and execution history of an earlier Part 3
-iteration, including a factorial prompt ablation that is not a result in the
-current report. The evolving-experience study, common-situation check, and
-reported experience ablation are identified by their final manifests and
-analysis scripts. Use the final report for the reported methods and results.
+**Historical development record — not the current study protocol.** This file
+preserves an earlier Part 3 plan, including a factorial prompt ablation that
+is not a result in the current report. Some counts and planned checks below
+describe that earlier iteration. For reported methods and results, use the
+[public results index](RESULTS_INDEX.md), final manifests and outputs, and
+the report.
 
 ## Status
 
